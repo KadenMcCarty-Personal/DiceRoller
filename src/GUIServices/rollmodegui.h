@@ -31,29 +31,22 @@ class RollModeGUI
         //fills the the roll result screen with dice an total
         void populateResultScreen();
 
-        /// @brief  first fill with black then draw left die over that then push to screen to avoid flicker, parameter is the die we are drawing. uses a sprite. NOT Safe from going over or under array min/max.
-        /// @param dieIndex index of the die we are pushing 
-        /// @param x center x of where the sprite will be pushed
-        /// @param y center y of where the sprite will be pushed
-        void pushMedDie(uint8_t dieIndex, int32_t x, int32_t y);
-        /// @brief  first fill with black then draw left die over that then push to screen to avoid flicker, parameter is the die we are drawing. uses a sprite. NOT Safe from going over or under array min/max.
-        /// @param dieIndex index of the die we are pushing 
-        /// @param x center x of where the sprite will be pushed
-        /// @param y center y of where the sprite will be pushed
-        void pushBigDie(uint8_t dieIndex, int32_t x, int32_t y);
-        /// @brief  first fill with black then draw left die over that then push to screen to avoid flicker, parameter is the die we are drawing. uses a sprite. NOT Safe from going over or under array min/max.
-        /// @param dieIndex index of the die we are pushing 
-        /// @param x center x of where the sprite will be pushed
-        /// @param y center y of where the sprite will be pushed
-        void pushLilDie(uint8_t dieIndex, int32_t x, int32_t y);
-        /// @brief same as pushlildie but you print a value onto it as well
-        /// @param dieIndex 
-        /// @param x 
-        /// @param y 
-        /// @param printValue 
-        void pushLilDie(uint8_t dieIndex, int32_t x, int32_t y, char printValue[]);
-
+        /// @brief Push a sprite to the screen with an image centered on it. 
+        /// @param sprite 
+        /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
+        /// @param y global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
+        /// @param imageWidth 
+        /// @param imageHeight 
+        /// @param image 
         void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image);
+        /// @brief Push a sprite to the screen with an image centered on it. Includes a char array centered on sprite. 
+        /// @param sprite 
+        /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
+        /// @param y global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
+        /// @param imageWidth 
+        /// @param imageHeight 
+        /// @param image 
+        /// @param printValue char array to display on sprite
         void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image, char printValue[]);
 
         //---variables---
