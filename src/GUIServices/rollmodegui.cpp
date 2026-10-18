@@ -15,10 +15,9 @@ namespace constants
     // center of where the right die goes
     constexpr uint16_t RIGHT_DIE_X = 280;
     constexpr uint16_t RIGHT_DIE_Y = 120;
-    // first die in the dice line on bottom of screen
+    // first die in the dice line on bottom of screen, center point
     constexpr uint16_t FIRST_LIL_DIE_X = 23;
     constexpr uint16_t FIRST_LIL_DIE_Y = 212;
-
     // we can only fit so many tiny die. maybe implement pages on the roll screen
     constexpr uint16_t MAX_ON_SCREEN_DIE = 117;
     // The space in pixels between all the lil dice on the bottom of screen. to be clear, this is the distance between each die's center point, not edge. 
@@ -26,11 +25,11 @@ namespace constants
 }
 
 RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&tft), _lilDice(&tft){
-    _bigDice.createSprite(Images::maxBigDieWidth, Images::maxBigDieHeight);
-    _medDice.createSprite(Images::maxMedDieWidth, Images::maxMedDieHeight);
+    _bigDice.createSprite(Images::bigDieSpriteWidth, Images::bigDieSpriteHeight);
+    _medDice.createSprite(Images::medDieSpriteWidth, Images::medDieSpriteHeight);
 
     // init the lil dice sprite, the text there will be different
-    _lilDice.createSprite(Images::maxLilDieWidth, Images::maxLilDieHeight);
+    _lilDice.createSprite(Images::lilDieSpriteWidth, Images::lilDieSpriteHeight);
     _lilDice.setTextSize(1);
     _lilDice.setTextColor(TFT_WHITE);
     _lilDice.setTextFont(2);
@@ -39,6 +38,46 @@ RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&t
 
     _dieAmounts = {0, 0, 0, 0, 0, 0};
     _navigation = 0;
+}
+
+
+void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed)
+{
+    // -1 if left, +1 if right 0 if neither or both, for navigation
+    // First we are updating navigation 
+    int navDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
+    if (navDelta != 0)
+    {
+        // loops back to 0/nav max using modulo ("it doesn't matter" -Yuji)
+        // ok changed functions.h to a namespace PLEASE WORK IM SO TIRED
+        _navigation = Functions::wrapAround<int>(_navigation + navDelta, 0, constants::NAVIGATION_MAX_DEC);
+        // after we change which die is selected, update the screen
+        pushSelectionDice();
+    }
+
+    // change the amount of dice that will be rolled if add or subtract is pressed based on which is selected.
+    // add one for + and subtract one for -
+    // make sure we dont go into the negatives with constrain
+    int addDelta = (subtractPressed ? -1 : 0) + (addPressed ? 1 : 0);
+    if (addDelta != 0)
+    {
+        std::array<uint8_t, 6> prevDieAmounts = _dieAmounts;
+        _dieAmounts[_navigation] = constrain(_dieAmounts[_navigation] + addDelta, 0, 255);
+        _totalSelected += addDelta;
+        pushBottomDice(prevDieAmounts);
+    }
+
+    // lastly, check if the roll button has been pressed
+    if (rollPressed)
+    {
+
+    }
+}
+void RollModeGUI::enter()
+{
+    drawBackground();
+    pushSelectionDice();
+    pushBottomDice();
 }
 
 
@@ -55,6 +94,7 @@ void RollModeGUI::pushSelectionDice()
     pushBigDie(_navigation, constants::SCREEN_CENTER_X, constants::SCREEN_CENTER_Y);
     pushMedDie(navToInc, constants::RIGHT_DIE_X, constants::RIGHT_DIE_Y);
 }
+// TOOD: SET UP MAX AND REMOVE x WHEN REACHING TRIPLE DIGITS
 void RollModeGUI::pushBottomDice()
 {
     // start by resetting the whole bottom
@@ -114,47 +154,18 @@ void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
 void RollModeGUI::eraseBottomDice()
 {
     _tft.fillRect(
-        constants::FIRST_LIL_DIE_X - (Images::maxLilDieWidth/2),
-        constants::FIRST_LIL_DIE_Y - (Images::maxLilDieHeight/2),
+        constants::FIRST_LIL_DIE_X - (Images::lilDieSpriteWidth/2),
+        constants::FIRST_LIL_DIE_Y - (Images::lilDieSpriteHeight/2),
         320, // screen width
-        Images::maxLilDieHeight,
+        Images::lilDieSpriteHeight,
         TFT_BLACK
     );
 }
 
-void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed)
+void RollModeGUI::populateResultScreen()
 {
-    // -1 if left, +1 if right 0 if neither or both, for navigation
-    // writen in inline ifs for readability, same with later
-    int navDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
-    if (navDelta != 0)
-    {
-        // loops back to 0/nav max using modulo ("it doesn't matter" -Yuji)
-        // ok changed functions.h to a namespace PLEASE WORK IM SO TIRED
-        _navigation = Functions::wrapAround<int>(_navigation + navDelta, 0, constants::NAVIGATION_MAX_DEC);
-        // after we change which die is selected, update the screen
-        pushSelectionDice();
-    }
-    // change the amount of dice that will be rolled based on which is selected.
-    // add one for + and subtract one for -
-    // make sure we dont go into the negatives with constrain
-    int addDelta = (subtractPressed ? -1 : 0) + (addPressed ? 1 : 0);
-    if (addDelta != 0)
-    {
-        std::array<uint8_t, 6> prevDieAmounts = _dieAmounts;
-        _dieAmounts[_navigation] = constrain(_dieAmounts[_navigation] + addDelta, 0, 255);
-        pushBottomDice(prevDieAmounts);
-    }
-
 
 }
-void RollModeGUI::enter()
-{
-    drawBackground();
-    pushSelectionDice();
-    pushBottomDice();
-}
-
 
 // ===================================================================
 // helper functions for interacting with tft
@@ -182,6 +193,13 @@ void RollModeGUI::drawBackground()
   // ButtonRightSmall
   _tft.drawBitmap(230, 112, Images::image_ButtonRightSmall_bits, 6, 10, 0xFFFF);
 }
+void RollModeGUI::drawResultBackground()
+{
+    //SUBJECT TO CHANGE, FIRST ITERATION FOR TESTING AND STUFF
+    _tft.fillScreen(0x0);
+    _tft.drawBitmap(11, 15, Images::image_paint_4_bits, 280, 204, 0xFFFF);
+    _tft.drawBitmap(22, 17, Images::image_paint_7_bits, 265, 154, 0xFFFF);
+}
 void RollModeGUI::pushMedDie(uint8_t dieIndex, int32_t x, int32_t y)
 {
     // uncomment to make sure we wrap around to either side of _navigation. commented because we already do this before its called
@@ -191,9 +209,9 @@ void RollModeGUI::pushMedDie(uint8_t dieIndex, int32_t x, int32_t y)
     // center the image on the sprite
     _medDice.pushImage(
         // caluculate local x
-        (Images::maxMedDieWidth - *Images::medDiceWidth[dieIndex])/2, 
+        (Images::medDieSpriteWidth - *Images::medDiceWidth[dieIndex])/2, 
         //calculate local y
-        (Images::maxMedDieHeight - *Images::medDiceHeight[dieIndex])/2,
+        (Images::medDieSpriteHeight - *Images::medDiceHeight[dieIndex])/2,
         // image width and height
         *Images::medDiceWidth[dieIndex],
         *Images::medDiceHeight[dieIndex],
@@ -203,8 +221,8 @@ void RollModeGUI::pushMedDie(uint8_t dieIndex, int32_t x, int32_t y)
     _medDice.pushSprite(
         // LEFT_DIE_X and Y are the center points for where the dice need to be but we push the sprite
         // from its top left corner so we need to move the center x and y there using width and height
-        x - (Images::maxMedDieWidth/2),
-        y - (Images::maxMedDieHeight/2)
+        x - (Images::medDieSpriteWidth/2),
+        y - (Images::medDieSpriteHeight/2)
     );
 }
 void RollModeGUI::pushBigDie(uint8_t dieIndex, int32_t x, int32_t y)
@@ -216,9 +234,9 @@ void RollModeGUI::pushBigDie(uint8_t dieIndex, int32_t x, int32_t y)
     // center the image on the sprite
     _bigDice.pushImage(
         // caluculate local x
-        (Images::maxBigDieWidth - *Images::bigDiceWidth[dieIndex])/2, 
+        (Images::bigDieSpriteWidth - *Images::bigDiceWidth[dieIndex])/2, 
         //calculate local y
-        (Images::maxBigDieHeight - *Images::bigDiceHeight[dieIndex])/2,
+        (Images::bigDieSpriteHeight - *Images::bigDiceHeight[dieIndex])/2,
         // image width and height
         *Images::bigDiceWidth[dieIndex],
         *Images::bigDiceHeight[dieIndex],
@@ -228,8 +246,8 @@ void RollModeGUI::pushBigDie(uint8_t dieIndex, int32_t x, int32_t y)
     _bigDice.pushSprite(
         // LEFT_DIE_X and Y are the center points for where the dice need to be but we push the sprite
         // from its top left corner so we need to move the center x and y there using width and height
-        x - (Images::maxBigDieWidth/2),
-        y - (Images::maxBigDieHeight/2)
+        x - (Images::bigDieSpriteWidth/2),
+        y - (Images::bigDieSpriteHeight/2)
     );
 }
 void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y)
@@ -241,9 +259,9 @@ void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y)
     // center the image on the sprite
     _lilDice.pushImage(
         // caluculate local x
-        (Images::maxLilDieWidth - *Images::lilDiceWidth[dieIndex])/2, 
+        (Images::lilDieSpriteWidth - *Images::lilDiceWidth[dieIndex])/2, 
         //calculate local y
-        (Images::maxLilDieHeight - *Images::lilDiceHeight[dieIndex])/2,
+        (Images::lilDieSpriteHeight - *Images::lilDiceHeight[dieIndex])/2,
         // image width and height
         *Images::lilDiceWidth[dieIndex],
         *Images::lilDiceHeight[dieIndex],
@@ -253,8 +271,8 @@ void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y)
     _lilDice.pushSprite(
         // LEFT_DIE_X and Y are the center points for where the dice need to be but we push the sprite
         // from its top left corner so we need to move the center x and y there using width and height
-        x - (Images::maxLilDieWidth/2),
-        y - (Images::maxLilDieHeight/2)
+        x - (Images::lilDieSpriteWidth/2),
+        y - (Images::lilDieSpriteHeight/2)
     );
 }
 void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y, char printValue[])
@@ -266,20 +284,20 @@ void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y, char printV
     // center the image on the sprite
     _lilDice.pushImage(
         // caluculate local x
-        (Images::maxLilDieWidth - *Images::lilDiceWidth[dieIndex])/2, 
+        (Images::lilDieSpriteWidth - *Images::lilDiceWidth[dieIndex])/2, 
         //calculate local y
-        (Images::maxLilDieHeight - *Images::lilDiceHeight[dieIndex])/2,
+        (Images::lilDieSpriteHeight - *Images::lilDiceHeight[dieIndex])/2,
         // image width and height
         *Images::lilDiceWidth[dieIndex],
         *Images::lilDiceHeight[dieIndex],
         Images::lilDice[dieIndex]
     );
-    _lilDice.drawString(printValue, Images::maxLilDieWidth/2 + 1, Images::maxLilDieHeight/2);
+    _lilDice.drawString(printValue, Images::lilDieSpriteWidth/2 + 1, Images::lilDieSpriteHeight/2);
     //push sprite to screen
     _lilDice.pushSprite(
         // LEFT_DIE_X and Y are the center points for where the dice need to be but we push the sprite
         // from its top left corner so we need to move the center x and y there using width and height
-        x - (Images::maxLilDieWidth/2),
-        y - (Images::maxLilDieHeight/2)
+        x - (Images::lilDieSpriteWidth/2),
+        y - (Images::lilDieSpriteHeight/2)
     );
 }
