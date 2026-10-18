@@ -53,6 +53,8 @@ class RollModeGUI
         /// @param printValue 
         void pushLilDie(uint8_t dieIndex, int32_t x, int32_t y, char printValue[]);
 
+        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image);
+        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image, char printValue[]);
 
         //---variables---
         TFT_eSPI& _tft;

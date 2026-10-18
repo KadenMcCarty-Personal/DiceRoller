@@ -154,8 +154,8 @@ void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
 void RollModeGUI::eraseBottomDice()
 {
     _tft.fillRect(
-        constants::FIRST_LIL_DIE_X - (Images::lilDieSpriteWidth/2),
-        constants::FIRST_LIL_DIE_Y - (Images::lilDieSpriteHeight/2),
+        constants::FIRST_LIL_DIE_X - (_lilDice.width()/2),
+        constants::FIRST_LIL_DIE_Y - (_lilDice.height()/2),
         320, // screen width
         Images::lilDieSpriteHeight,
         TFT_BLACK
@@ -252,52 +252,100 @@ void RollModeGUI::pushBigDie(uint8_t dieIndex, int32_t x, int32_t y)
 }
 void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y)
 {
+    // save the dice image's width and height
+    int imageWidth = *Images::lilDiceWidth[dieIndex];
+    int imageHeight = *Images::lilDiceHeight[dieIndex];
     // uncomment to make sure we wrap around to either side of _navigation. commented because we already do this before its called
     // dieIndex = Functions::wrapAround<int>(dieIndex, 0, constants::NAVIGATION_MAX_DEC);
     //reset sprite
     _lilDice.fillSprite(TFT_BLACK);
     // center the image on the sprite
     _lilDice.pushImage(
-        // caluculate local x
-        (Images::lilDieSpriteWidth - *Images::lilDiceWidth[dieIndex])/2, 
-        //calculate local y
-        (Images::lilDieSpriteHeight - *Images::lilDiceHeight[dieIndex])/2,
+        // caluculate where the image must be placed on the sprite
+        (_lilDice.height() - imageWidth)/2, 
+        (_lilDice.width() - imageHeight)/2,
         // image width and height
-        *Images::lilDiceWidth[dieIndex],
-        *Images::lilDiceHeight[dieIndex],
+        imageWidth,
+        imageHeight,
         Images::lilDice[dieIndex]
     );
     //push sprite to screen
     _lilDice.pushSprite(
         // LEFT_DIE_X and Y are the center points for where the dice need to be but we push the sprite
         // from its top left corner so we need to move the center x and y there using width and height
-        x - (Images::lilDieSpriteWidth/2),
-        y - (Images::lilDieSpriteHeight/2)
+        x - (_lilDice.width()/2),
+        y - (_lilDice.height()/2)
     );
 }
 void RollModeGUI::pushLilDie(uint8_t dieIndex, int32_t x, int32_t y, char printValue[])
 {
+    // save the dice image's width and height
+    int imageWidth = *Images::lilDiceWidth[dieIndex];
+    int imageHeight = *Images::lilDiceHeight[dieIndex];
     // uncomment to make sure we wrap around to either side of _navigation. commented because we already do this before its called
     // dieIndex = Functions::wrapAround<int>(dieIndex, 0, constants::NAVIGATION_MAX_DEC);
     //reset sprite
     _lilDice.fillSprite(TFT_BLACK);
     // center the image on the sprite
     _lilDice.pushImage(
-        // caluculate local x
-        (Images::lilDieSpriteWidth - *Images::lilDiceWidth[dieIndex])/2, 
-        //calculate local y
-        (Images::lilDieSpriteHeight - *Images::lilDiceHeight[dieIndex])/2,
+        // caluculate where the image must be placed on the sprite
+        (_lilDice.width() - imageWidth)/2, 
+        (_lilDice.height() - imageHeight)/2,
         // image width and height
-        *Images::lilDiceWidth[dieIndex],
-        *Images::lilDiceHeight[dieIndex],
+        imageWidth,
+        imageHeight,
         Images::lilDice[dieIndex]
     );
-    _lilDice.drawString(printValue, Images::lilDieSpriteWidth/2 + 1, Images::lilDieSpriteHeight/2);
+    _lilDice.drawString(printValue, _lilDice.width()/2 + 1, _lilDice.height()/2);
     //push sprite to screen
     _lilDice.pushSprite(
         // LEFT_DIE_X and Y are the center points for where the dice need to be but we push the sprite
         // from its top left corner so we need to move the center x and y there using width and height
-        x - (Images::lilDieSpriteWidth/2),
-        y - (Images::lilDieSpriteHeight/2)
+        x - (_lilDice.width()/2),
+        y - (_lilDice.height()/2)
+    );
+}
+
+void RollModeGUI::pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image)
+{
+    //reset sprite
+    sprite.fillSprite(TFT_BLACK);
+    // center the image on the sprite
+    sprite.pushImage(
+        // caluculate where the image must be placed on the sprite so it is centered
+        (sprite.width() - imageWidth)/2, 
+        (sprite.height() - imageHeight)/2,
+        imageWidth,
+        imageHeight,
+        image
+    );
+    //push sprite to screen
+    sprite.pushSprite(
+        // X and Y are the center points for where the dice need to be but we push the sprite
+        // from its top left corner so we need to move the center x and y there using width and height
+        x - (sprite.width()/2),
+        y - (sprite.height()/2)
+    );
+}
+void RollModeGUI::pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image, char printValue[])
+{
+    //reset sprite
+    sprite.fillSprite(TFT_BLACK);
+    // center the image on the sprite
+    sprite.pushImage(
+        // caluculate where the image must be placed on the sprite so it is centered
+        (sprite.width() - imageWidth)/2, 
+        (sprite.height() - imageHeight)/2,
+        imageWidth,
+        imageHeight,
+        image
+    );
+    sprite.drawString(printValue, sprite.width()/2 + 1, sprite.height()/2);
+    //push sprite to screen
+    sprite.pushSprite(
+        // X and Y are the center points for where the dice need to be but we push the sprite
+        // from its top left corner so we need to move the center x and y there using width and height
+        x - (sprite.width()/2),
+        y - (sprite.height()/2)
     );
 }
