@@ -1,13 +1,13 @@
 #pragma once
 
-#include "../PeripheralDA/lcdinterface.h"
+#include <TFT_eSPI.h>
 
 class SaveModeGUI 
 {
     public:
-        explicit SaveModeGUI(LcdInterface& lcdInterface);
+        explicit SaveModeGUI(TFT_eSPI& tft);
         void enter();
     private: 
-        LcdInterface& _lcdInterface;
+        TFT_eSPI& _tft;
         uint8_t _navigation;
 };

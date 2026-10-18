@@ -1,4 +1,4 @@
 #include "attackmodegui.h"
 
-AttackModeGUI::AttackModeGUI(LcdInterface& lcdInterface) : _lcdInterface(lcdInterface){}
-void AttackModeGUI::enter() {}
+AttackModeGUI::AttackModeGUI(TFT_eSPI& tft) : _tft(tft){}
+void AttackModeGUI::enter(){}

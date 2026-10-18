@@ -2,7 +2,6 @@
 #include <TFT_eSPI.h>
 
 #include "PeripheralDA/button.h"
-#include "PeripheralDA/lcdinterface.h"
 #include "GUIServices/rollmodegui.h"
 #include "GUIServices/savemodegui.h"
 #include "GUIServices/attackmodegui.h"
@@ -21,10 +20,9 @@ Button buttonMode(Pins::kButtonMode);
 TFT_eSPI tft = TFT_eSPI(); 
 
 // init gui service objects
-LcdInterface lcdInterface(tft);
-RollModeGUI rollMode(lcdInterface);
-SaveModeGUI saveMode(lcdInterface);
-AttackModeGUI attackMode(lcdInterface);
+RollModeGUI rollMode(tft);
+SaveModeGUI saveMode(tft);
+AttackModeGUI attackMode(tft);
 
 // total number of elements in the enum MUST UPDATE WHEN ADDING MORE. doing this so it does not
 // have to be calculated every time mode is called or calculated at all
@@ -43,6 +41,7 @@ int16_t modeCycleInt = 0;
 //init functions
 void cycleMode(bool isReady);
 void update();
+void initTFT();
 
 void setup() 
 {
@@ -56,7 +55,7 @@ void setup()
   pinMode(Pins::kButtonMode, INPUT_PULLUP);
 
   // init lcd interface
-  lcdInterface.begin();
+  initTFT();
 
   // init buttons
   buttonLeft.begin();
@@ -132,4 +131,12 @@ void update()
       break;
 
   }
+}
+
+// init tft library
+void initTFT()
+{
+  tft.init(); 
+  tft.setRotation(3);
+  tft.fillScreen(TFT_BLACK);
 }
