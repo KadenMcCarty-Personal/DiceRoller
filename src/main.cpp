@@ -52,6 +52,9 @@ void setup()
   // set pin modes
   pinMode(Pins::kButtonLeft, INPUT_PULLUP);
   pinMode(Pins::kButtonRight, INPUT_PULLUP);
+  pinMode(Pins::kButtonSubtract, INPUT_PULLUP);
+  pinMode(Pins::kButtonAdd, INPUT_PULLUP);
+  pinMode(Pins::kButtonRoll, INPUT_PULLUP);
   pinMode(Pins::kButtonMode, INPUT_PULLUP);
 
   // init lcd interface
