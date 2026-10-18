@@ -9,15 +9,32 @@ namespace constants
     // center of screen x and y coords, also where the center big dice lives
     constexpr uint16_t SCREEN_CENTER_X = 160;
     constexpr uint16_t SCREEN_CENTER_Y = 120;
+    constexpr uint16_t SCREEN_WIDTH = 320;
+    constexpr uint16_t SCREEN_HEIGHT = 240;
+
     // center of where the left die goes
-    constexpr uint16_t LEFT_DIE_X = 40;
-    constexpr uint16_t LEFT_DIE_Y = 120;
+    constexpr uint16_t LEFT_DIE_X_CENTER = 40;
+    constexpr uint16_t LEFT_DIE_Y_CENTER = 120;
     // center of where the right die goes
-    constexpr uint16_t RIGHT_DIE_X = 280;
-    constexpr uint16_t RIGHT_DIE_Y = 120;
+    constexpr uint16_t RIGHT_DIE_X_CENTER = 280;
+    constexpr uint16_t RIGHT_DIE_Y_CENTER = 120;
     // first die in the dice line on bottom of screen, center point
-    constexpr uint16_t FIRST_LIL_DIE_X = 23;
-    constexpr uint16_t FIRST_LIL_DIE_Y = 212;
+    constexpr uint16_t FIRST_LIL_DIE_X_CENTER = 23;
+    constexpr uint16_t FIRST_LIL_DIE_Y_CENTER = 212;
+
+    // used for placement of sprites so we don't have to calculate it every time
+    constexpr uint16_t LEFT_DIE_X = LEFT_DIE_X_CENTER - (Images::medDieSpriteWidth/2);
+    constexpr uint16_t LEFT_DIE_Y = LEFT_DIE_Y_CENTER - (Images::medDieSpriteHeight/2);
+
+    constexpr uint16_t CENTER_DIE_X = SCREEN_CENTER_X - (Images::bigDieSpriteWidth/2);
+    constexpr uint16_t CENTER_DIE_Y = SCREEN_CENTER_Y - (Images::bigDieSpriteHeight/2);
+
+    constexpr uint16_t RIGHT_DIE_X = RIGHT_DIE_X_CENTER - (Images::medDieSpriteWidth/2);
+    constexpr uint16_t RIGHT_DIE_Y = RIGHT_DIE_Y_CENTER - (Images::medDieSpriteHeight/2);
+
+    constexpr uint16_t FIRST_LIL_DIE_X = FIRST_LIL_DIE_X_CENTER - (Images::lilDieSpriteWidth/2);
+    constexpr uint16_t FIRST_LIL_DIE_Y = FIRST_LIL_DIE_Y_CENTER - (Images::lilDieSpriteHeight/2);
+
     // we can only fit so many tiny die. maybe implement pages on the roll screen
     constexpr uint16_t MAX_ON_SCREEN_DIE = 117;
     // The space in pixels between all the lil dice on the bottom of screen. to be clear, this is the distance between each die's center point, not edge. 
@@ -90,15 +107,8 @@ void RollModeGUI::pushSelectionDice()
 
     // push the new three dice. for these we use _navigation which tells us where to go
     //first draw left dice
-    // pushMedDie(navToDec, constants::LEFT_DIE_X, constants::LEFT_DIE_Y);
-    // pushBigDie(_navigation, constants::SCREEN_CENTER_X, constants::SCREEN_CENTER_Y);
-    // pushMedDie(navToInc, constants::RIGHT_DIE_X, constants::RIGHT_DIE_Y);
-
-
-
-
     pushDiceSprite(_medDice, constants::LEFT_DIE_X, constants::LEFT_DIE_Y, *Images::medDiceWidth[navToDec], *Images::medDiceHeight[navToDec], Images::medDice[navToDec]);
-    pushDiceSprite(_bigDice, constants::SCREEN_CENTER_X, constants::SCREEN_CENTER_Y, *Images::bigDiceWidth[_navigation], *Images::bigDiceHeight[_navigation], Images::bigDice[_navigation]);
+    pushDiceSprite(_bigDice, constants::CENTER_DIE_X, constants::CENTER_DIE_Y, *Images::bigDiceWidth[_navigation], *Images::bigDiceHeight[_navigation], Images::bigDice[_navigation]);
     pushDiceSprite(_medDice, constants::RIGHT_DIE_X, constants::RIGHT_DIE_Y, *Images::medDiceWidth[navToInc], *Images::medDiceHeight[navToInc], Images::medDice[navToInc]);
 }
 // TOOD: SET UP MAX AND REMOVE x WHEN REACHING TRIPLE DIGITS
@@ -167,9 +177,9 @@ void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
 void RollModeGUI::eraseBottomDice()
 {
     _tft.fillRect(
-        constants::FIRST_LIL_DIE_X - (_lilDice.width()/2),
-        constants::FIRST_LIL_DIE_Y - (_lilDice.height()/2),
-        320, // screen width
+        constants::FIRST_LIL_DIE_X,
+        constants::FIRST_LIL_DIE_Y,
+        constants::SCREEN_WIDTH, // screen width
         Images::lilDieSpriteHeight,
         TFT_BLACK
     );
@@ -227,12 +237,11 @@ void RollModeGUI::pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int3
         imageHeight,
         image
     );
-    //push sprite to screen
+    //push sprite to screen at x and y (from sprites top left corner)
     sprite.pushSprite(
-        // X and Y are the center points for where the dice need to be but we push the sprite
-        // from its top left corner so we need to move the center x and y there using width and height
-        x - (sprite.width()/2),
-        y - (sprite.height()/2)
+        // place 
+        x,
+        y 
     );
 }
 void RollModeGUI::pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image, char printValue[])
@@ -249,11 +258,10 @@ void RollModeGUI::pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int3
         image
     );
     sprite.drawString(printValue, sprite.width()/2 + 1, sprite.height()/2);
-    //push sprite to screen
+    //push sprite to screen at x and y (from sprites top left corner)
     sprite.pushSprite(
-        // X and Y are the center points for where the dice need to be but we push the sprite
-        // from its top left corner so we need to move the center x and y there using width and height
-        x - (sprite.width()/2),
-        y - (sprite.height()/2)
+        // place 
+        x,
+        y 
     );
 }
