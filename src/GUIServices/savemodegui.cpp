@@ -1,4 +1,4 @@
 #include "savemodegui.h"
 
-SaveModeGUI::SaveModeGUI(LcdInterface& lcdInterface) : _lcdInterface(lcdInterface){}
+SaveModeGUI::SaveModeGUI(TFT_eSPI& tft) : _tft(tft){}
 void SaveModeGUI::enter(){}
