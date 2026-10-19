@@ -2,10 +2,6 @@
 
 namespace constants
 {
-    // set this to one less than the actual max since it is mostly used in arrays where
-    // the first element is 0
-    constexpr uint8_t NAVIGATION_MAX_DEC = 5;
-    constexpr uint8_t NAVIGATION_MAX = 6;
     // center of screen x and y coords, also where the center big dice lives
     constexpr uint16_t SCREEN_CENTER_X = 160;
     constexpr uint16_t SCREEN_CENTER_Y = 120;
@@ -35,6 +31,13 @@ namespace constants
     constexpr uint16_t FIRST_LIL_DIE_X = FIRST_LIL_DIE_X_CENTER - (Images::lilDieSpriteWidth/2);
     constexpr uint16_t FIRST_LIL_DIE_Y = FIRST_LIL_DIE_Y_CENTER - (Images::lilDieSpriteHeight/2);
 
+    // this is the box where we can put dice into in the result screen
+    constexpr uint16_t RESULT_PLACEMENT_X = 5;
+    constexpr uint16_t RESULT_PLACEMENT_Y = 1;
+    constexpr uint16_t RESULT_PLACEMENT_WIDTH = 311;
+    constexpr uint16_t RESULT_PLACEMENT_HEIGHT = 210;
+    
+
     // we can only fit so many tiny die. maybe implement pages on the roll screen
     constexpr uint16_t MAX_ON_SCREEN_DIE = 117;
     // The space in pixels between all the lil dice on the bottom of screen. to be clear, this is the distance between each die's center point, not edge. 
@@ -50,10 +53,15 @@ RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&t
     _lilDice.setTextSize(1);
     _lilDice.setTextColor(TFT_WHITE);
     _lilDice.setTextFont(2);
-    // center text instead of left allign
     _lilDice.setTextDatum(CC_DATUM);
 
+    _medDice.setTextSize(2);
+    _medDice.setTextColor(TFT_WHITE);
+    _medDice.setTextFont(1);
+    _medDice.setTextDatum(CC_DATUM);
+
     _dieAmounts = {0, 0, 0, 0, 0, 0};
+    _dieTypes = {20, 12, 10, 8, 6, 4};
     _navigation = 0;
 }
 
@@ -67,7 +75,7 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
     {
         // loops back to 0/nav max using modulo ("it doesn't matter" -Yuji)
         // ok changed functions.h to a namespace PLEASE WORK IM SO TIRED
-        _navigation = Functions::wrapAround<int>(_navigation + navDelta, 0, constants::NAVIGATION_MAX_DEC);
+        _navigation = Functions::wrapAround<int>(_navigation + navDelta, 0, _dieAmounts.size() - 1);
         // after we change which die is selected, update the screen
         pushSelectionDice();
     }
@@ -87,7 +95,8 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
     // lastly, check if the roll button has been pressed
     if (rollPressed)
     {
-
+        drawResultBackground();
+        populateResultScreen(_lilDice, Images::lilDiceWidth, Images::lilDiceHeight, Images::lilDice);
     }
 }
 void RollModeGUI::enter()
@@ -102,8 +111,8 @@ void RollModeGUI::pushSelectionDice()
 {
     // find the navigation of the dice to the left and right of the one we are selecting.
     // we do this here so we only have to do wrap around func once for each
-    int navToDec = Functions::wrapAround<int>(_navigation - 1, 0, constants::NAVIGATION_MAX_DEC);
-    int navToInc = Functions::wrapAround<int>(_navigation + 1, 0, constants::NAVIGATION_MAX_DEC);
+    int navToDec = Functions::wrapAround<int>(_navigation - 1, 0, _dieAmounts.size() - 1);
+    int navToInc = Functions::wrapAround<int>(_navigation + 1, 0, _dieAmounts.size() - 1);
 
     // push the new three dice. for these we use _navigation which tells us where to go
     //first draw left dice
@@ -121,7 +130,7 @@ void RollModeGUI::pushBottomDice()
     // dice are used. example: a d20 would get put in the first slot but a d4 which is index 5 would
     // get put all the way at the end because of the formula i * PIXELS_BETWEEN_LIL_BOTTOM_DICE
     uint8_t placement = 0;
-    for(int i = 0; i < constants::NAVIGATION_MAX; i++)
+    for(int i = 0; i < _dieAmounts.size(); i++)
     {
         if(_dieAmounts[i] > 0)
         {
@@ -143,7 +152,7 @@ void RollModeGUI::pushBottomDice()
 }
 void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
 {
-    for(int i = 0; i < constants::NAVIGATION_MAX; i++)
+    for(int i = 0; i < _dieAmounts.size(); i++)
     {
         // if any dice need to be completely removed or added, just call pushBottomDice() to reset the whole thing
         if((prevDieAmounts[i] == 0) != (_dieAmounts[i] == 0))
@@ -153,7 +162,7 @@ void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
         }
     }
     uint8_t placement = 0;
-    for(int i = 0; i < constants::NAVIGATION_MAX; i++)
+    for(int i = 0; i < _dieAmounts.size(); i++)
     {
         if(prevDieAmounts[i] != _dieAmounts[i])
         {
@@ -185,9 +194,40 @@ void RollModeGUI::eraseBottomDice()
     );
 }
 
-void RollModeGUI::populateResultScreen()
+void RollModeGUI::populateResultScreen(TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
 {
+    // initial calculation: gap between each, how many go on each row, how many can go in each column
+    int numDicePerRow = constants::RESULT_PLACEMENT_WIDTH/sprite.width();
+    int numDicePerCol = constants::RESULT_PLACEMENT_HEIGHT/sprite.height(); 
+    int gapBetweenOnRows = numDicePerRow/(constants::RESULT_PLACEMENT_WIDTH%sprite.width());
+    int gapBetweenOnCols = numDicePerCol/(constants::RESULT_PLACEMENT_HEIGHT%sprite.height());
+    int paddingLeft = numDicePerRow%(constants::RESULT_PLACEMENT_WIDTH%sprite.width());
+    // make the paddingLeft an even number
+    paddingLeft -= (paddingLeft%2 == 1 ? 1 : 0);
 
+
+    int currentXPlacement = constants::RESULT_PLACEMENT_X + paddingLeft;
+    int currentYPlacement = constants::RESULT_PLACEMENT_Y;
+    // set up char array to display. we must convert int to char array
+    char buffer[6];
+    
+    for(int i = 0; i < _dieAmounts.size(); i++)
+    {
+        for(int j = 0; j < _dieAmounts[i]; j++)
+        {
+            
+            if (currentXPlacement + sprite.width() > constants::RESULT_PLACEMENT_WIDTH + constants::RESULT_PLACEMENT_X)
+            {
+                currentXPlacement = constants::RESULT_PLACEMENT_X + paddingLeft;
+                currentYPlacement += sprite.height() + gapBetweenOnCols;
+            }
+            snprintf(buffer, 6, "%u", random(1, _dieTypes[i] + 1));
+            pushDiceSprite(sprite, currentXPlacement, currentYPlacement, *imageWidths[i], *imageHeights[i], images[i], buffer);
+            
+            currentXPlacement += sprite.width() + gapBetweenOnRows;
+            delay(10);
+        }
+    }
 }
 
 // ===================================================================

@@ -29,7 +29,7 @@ class RollModeGUI
         // draws background for roll result screen
         void drawResultBackground();
         //fills the the roll result screen with dice an total
-        void populateResultScreen();
+        void populateResultScreen(TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
 
         /// @brief Push a sprite to the screen with an image centered on it. 
         /// @param sprite 
@@ -59,6 +59,9 @@ class RollModeGUI
         uint8_t _navigation;
         // amount of each die
         std::array<uint8_t, 6> _dieAmounts;
+        // should be used in corelation with _dieAmounts. Shows what index each die type lives at. {20, 12, 10, 8, 6, 4} in this case.
+        // must be changed if more dice are added
+        std::array<uint8_t, 6> _dieTypes;
         // this is just the total amount of dice that are currently selected to be rolled. 
         // made into a member variable so we don't have to calculate it every time
         uint16_t _totalSelected;
