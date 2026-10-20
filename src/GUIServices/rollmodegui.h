@@ -28,8 +28,28 @@ class RollModeGUI
         void drawBackground();
         // draws background for roll result screen
         void drawResultBackground();
-        //fills the the roll result screen with dice an total
-        void populateResultScreen(TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        /// @brief 
+        /// @param resultBoxX 
+        /// @param resultBoxY 
+        /// @param resultBoxWidth 
+        /// @param resultBoxHeight 
+        /// @param sprite 
+        /// @param imageWidths 
+        /// @param imageHeights 
+        /// @param images 
+        void populateResultScreen(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        /// @brief 
+        /// @param resultBoxX 
+        /// @param resultBoxY 
+        /// @param resultBoxWidth 
+        /// @param resultBoxHeight 
+        /// @param sprite 
+        /// @param imageWidths 
+        /// @param imageHeights 
+        /// @param images 
+        /// @param colGapSize 
+        /// @param rowGapSize 
+        void populateResultScreen(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
 
         /// @brief Push a sprite to the screen with an image centered on it. 
         /// @param sprite 
