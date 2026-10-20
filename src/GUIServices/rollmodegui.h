@@ -16,6 +16,9 @@ class RollModeGUI
         // function to call every loop, manges pretty much everything
         void update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed);
     private: 
+        //this just sets backend arrays 'n stuff like _rolls
+        void rollSelected();
+
         // draws the three selected dice using _navigation tell selection
         void pushSelectionDice();
         // erases then redraws all selected dice on the selection line
@@ -28,29 +31,17 @@ class RollModeGUI
         void drawBackground();
         // draws background for roll result screen
         void drawResultBackground();
-        /// @brief 
-        /// @param resultBoxX 
-        /// @param resultBoxY 
-        /// @param resultBoxWidth 
-        /// @param resultBoxHeight 
-        /// @param sprite 
-        /// @param imageWidths 
-        /// @param imageHeights 
-        /// @param images 
-        void populateResultScreen(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
-        /// @brief 
-        /// @param resultBoxX 
-        /// @param resultBoxY 
-        /// @param resultBoxWidth 
-        /// @param resultBoxHeight 
-        /// @param sprite 
-        /// @param imageWidths 
-        /// @param imageHeights 
-        /// @param images 
-        /// @param colGapSize 
-        /// @param rowGapSize 
-        void populateResultScreen(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
-
+        /// @brief made to remove the need for the overload of  populateResultScreen because I was tired of changing both of them. 
+        /// @param length 
+        /// @param spriteLength 
+        /// @return 
+        int dynamicGapCalculation(int length, int spriteLength);
+        // I'll keep you commented out for now but consider yourself MARKED FOR DEATH
+        // void populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        void populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
+        int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite);
+        int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, int colGapSize, int rowGapSize);
+        void populateResultScreenCentered(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
         /// @brief Push a sprite to the screen with an image centered on it. 
         /// @param sprite 
         /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
@@ -69,6 +60,12 @@ class RollModeGUI
         /// @param printValue char array to display on sprite
         void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image, char printValue[]);
 
+        // consts that are used here in the header file
+        static constexpr size_t NUM_DICE_TYPES = 6;
+        static constexpr size_t MAX_ROLL = 500;
+        // should be used in corelation with _dieAmounts. Shows what index each die type lives at. {20, 12, 10, 8, 6, 4} in this case.
+        // must be changed if more dice are added
+        static constexpr std::array<uint8_t, NUM_DICE_TYPES> DIE_TYPES = {20, 12, 10, 8, 6, 4};
         //---variables---
         TFT_eSPI& _tft;
         // we will use sprites for the main roll mode navigation to avoid flickering
@@ -78,10 +75,12 @@ class RollModeGUI
         // navigation through this page
         uint8_t _navigation;
         // amount of each die
-        std::array<uint8_t, 6> _dieAmounts;
-        // should be used in corelation with _dieAmounts. Shows what index each die type lives at. {20, 12, 10, 8, 6, 4} in this case.
-        // must be changed if more dice are added
-        std::array<uint8_t, 6> _dieTypes;
+        std::array<uint8_t, NUM_DICE_TYPES> _dieAmounts;
+        // This array must be used in tandum with _dieAmounts and DIE_TYPES to know exactly what was rolled. 
+        // example: _dieAmounts = {3, 1, 0, 0, 0, 1} 
+        // _rolls would look something like {11, 16, 19, 7, 1}. using _dieAmounts we can tell that
+        // the first 3 are d20s, the fourth is a d12, and the 5th is a d4. 
+        std::array<uint8_t, MAX_ROLL> _rolls;
         // this is just the total amount of dice that are currently selected to be rolled. 
         // made into a member variable so we don't have to calculate it every time
         uint16_t _totalSelected;
