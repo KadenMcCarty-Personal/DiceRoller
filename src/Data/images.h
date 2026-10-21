@@ -31,9 +31,9 @@ namespace Images
     inline constexpr const uint16_t* PROGMEM bigDice[] = {d20Big, d12Big, d10Big, d8Big, d6Big, d4Big};
     inline constexpr const uint16_t* PROGMEM bigDiceWidth[] = {&d20BigWidth, &d12BigWidth, &d10BigWidth, &d8BigWidth, &d6BigWidth, &d4BigWidth};
     inline constexpr const uint16_t* PROGMEM bigDiceHeight[] = {&d20BigHeight, &d12BigHeight, &d10BigHeight, &d8BigHeight, &d6BigHeight, &d4BigHeight};
-    // these will be used to set up sprites so we can make them big enough for the largest image
-    inline constexpr uint16_t PROGMEM maxBigDieWidth = 100;
-    inline constexpr uint16_t PROGMEM maxBigDieHeight = 115;
+    // these will be used to set up sprites so we can make them just big enough for the largest image
+    inline constexpr uint16_t PROGMEM bigDieSpriteWidth = 100;
+    inline constexpr uint16_t PROGMEM bigDieSpriteHeight = 115;
 
 
 
@@ -66,8 +66,8 @@ namespace Images
     inline constexpr const uint16_t* PROGMEM medDiceWidth[] = {&d20MedWidth, &d12MedWidth, &d10MedWidth, &d8MedWidth, &d6MedWidth, &d4MedWidth};
     inline constexpr const uint16_t* PROGMEM medDiceHeight[] = {&d20MedHeight, &d12MedHeight, &d10MedHeight, &d8MedHeight, &d6MedHeight, &d4MedHeight};
     // these will be used to set up sprites so we can make them big enough for the largest image
-    inline constexpr uint16_t PROGMEM maxMedDieWidth = 50;
-    inline constexpr uint16_t PROGMEM maxMedDieHeight = 58;
+    inline constexpr uint16_t PROGMEM medDieSpriteWidth = 50;
+    inline constexpr uint16_t PROGMEM medDieSpriteHeight = 58;
 
 
     // dice lil
@@ -99,8 +99,8 @@ namespace Images
     inline constexpr const uint16_t* PROGMEM lilDiceWidth[] = {&d20LilWidth, &d12LilWidth, &d10LilWidth, &d8LilWidth, &d6LilWidth, &d4LilWidth};
     inline constexpr const uint16_t* PROGMEM lilDiceHeight[] = {&d20LilHeight, &d12LilHeight, &d10LilHeight, &d8LilHeight, &d6LilHeight, &d4LilHeight};
     // these will be used to set up sprites so we can make them big enough for the largest image
-    inline constexpr uint16_t PROGMEM maxLilDieWidth = 25;
-    inline constexpr uint16_t PROGMEM maxLilDieHeight = 29;
+    inline constexpr uint16_t PROGMEM lilDieSpriteWidth = 25;
+    inline constexpr uint16_t PROGMEM lilDieSpriteHeight = 29;
 
 
     // TEMP FOR BACKGROUND

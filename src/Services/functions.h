@@ -14,4 +14,12 @@ namespace Functions
     {
         return num < min ? max : (num > max ? min : num);
     }
+    /// @brief works only for positives (i think)
+    /// @param a 
+    /// @param b 
+    /// @return 
+    constexpr int divideRoundUp(int a, int b)
+    {
+        return (a + b - 1) / b;
+    }
 }
