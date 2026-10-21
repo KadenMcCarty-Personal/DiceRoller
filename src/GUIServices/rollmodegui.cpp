@@ -417,13 +417,13 @@ void RollModeGUI::populateResultScreenCentered(int page, int resultBoxX, int res
     {
         return;
     }
-
+    
     int currentXGap = (resultBoxWidth - (numDiceInRow * sprite.width()))/(numDiceInRow + 1);
     int currentYGap = (resultBoxHeight - (numDiceInCol * sprite.height()))/(numDiceInCol + 1);
-    int currentXPlacement = (resultBoxX + currentXGap);
-    int currentYPlacement = (resultBoxY + currentYGap);
-
-    Serial.printf("%d\n", currentYPlacement);
+    int paddingLeft = (resultBoxWidth-(((sprite.width() + currentXGap) * numDiceInRow) + currentXGap))/2;
+    int paddingTop = (resultBoxHeight-(((sprite.height() + currentYGap) * numDiceInCol) + currentYGap))/2;
+    int currentXPlacement = (resultBoxX + currentXGap + paddingLeft);
+    int currentYPlacement = (resultBoxY + currentYGap + paddingTop);
     
     // loop through each die we have (d20, d12, d10 etc)
     // only actually goes into this one if there are die of that type to roll. meaning if we finish rolling all selected die, we will not enter the loop again. 
@@ -448,7 +448,8 @@ void RollModeGUI::populateResultScreenCentered(int page, int resultBoxX, int res
                     {
                         numDiceInRow = std::min(_total - index, maxDicePerRow);
                         currentXGap = (resultBoxWidth - (numDiceInRow * sprite.width()))/(numDiceInRow + 1);
-                        currentXPlacement = (resultBoxX + currentXGap);
+                        paddingLeft = (resultBoxWidth-(((sprite.width() + currentXGap) * numDiceInRow) + currentXGap))/2;
+                        currentXPlacement = (resultBoxX + currentXGap + paddingLeft);
                         currentYPlacement += sprite.height() + currentYGap;
                     }
                     snprintf(buffer, 6, "%u", _rolls[index]);
