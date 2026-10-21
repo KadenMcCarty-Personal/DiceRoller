@@ -18,6 +18,7 @@ class RollModeGUI
     private: 
         //this just sets backend arrays 'n stuff like _rolls
         void rollSelected();
+        void resetRolls();
 
         // draws the three selected dice using _navigation tell selection
         void pushSelectionDice();
@@ -41,7 +42,7 @@ class RollModeGUI
         void populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite);
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, int colGapSize, int rowGapSize);
-        void populateResultScreenCentered(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        void populateResultScreenCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
         /// @brief Push a sprite to the screen with an image centered on it. 
         /// @param sprite 
         /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.

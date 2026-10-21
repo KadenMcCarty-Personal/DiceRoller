@@ -1,5 +1,6 @@
 #include "rollmodegui.h"
 
+
 namespace constants
 {
     // center of screen x and y coords, also where the center big dice lives
@@ -62,6 +63,7 @@ RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&t
     _dieAmounts = {0, 0, 0, 0, 0, 0};
     _navigation = 0;
     _total = 0;
+    _rolls = {};
 }
 
 
@@ -94,17 +96,39 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
     // lastly, check if the roll button has been pressed
     if (rollPressed)
     {
+        rollSelected();
         drawResultBackground();
-        populateResultScreen( 
-            0,
+        // populateResultScreen( 
+        //     0,
+        //     static_cast<int>(constants::RESULT_PLACEMENT_X), 
+        //     static_cast<int>(constants::RESULT_PLACEMENT_Y), 
+        //     static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
+        //     static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
+        //     _lilDice,
+        //     Images::lilDiceWidth, Images::lilDiceHeight, 
+        //     Images::lilDice, 
+        //     dynamicGapCalculation(static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), _lilDice.width()), 0
+        // );
+        // populateResultScreen( 
+        //     1,
+        //     static_cast<int>(constants::RESULT_PLACEMENT_X), 
+        //     static_cast<int>(constants::RESULT_PLACEMENT_Y), 
+        //     static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
+        //     static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
+        //     _medDice,
+        //     Images::medDiceWidth, Images::medDiceHeight, 
+        //     Images::medDice, 
+        //     dynamicGapCalculation(static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), _medDice.width()), dynamicGapCalculation(static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), _medDice.height())
+        // );
+        populateResultScreenCentered( 
+            1,
             static_cast<int>(constants::RESULT_PLACEMENT_X), 
             static_cast<int>(constants::RESULT_PLACEMENT_Y), 
             static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
             static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
-            _lilDice,
-            Images::lilDiceWidth, Images::lilDiceHeight, 
-            Images::lilDice, 
-            15, 0
+            _medDice,
+            Images::medDiceWidth, Images::medDiceHeight, 
+            Images::medDice
         );
         // populateResultScreen(_medDice, Images::medDiceWidth, Images::medDiceHeight, Images::medDice);
         // populateResultScreen(_medDice, Images::medDiceWidth, Images::medDiceHeight, Images::medDice, 10, 10);
@@ -120,6 +144,7 @@ void RollModeGUI::enter()
 
 void RollModeGUI::rollSelected()
 {
+    resetRolls();
     // keep track of where we are on _rolls
     int rollsIndex = 0;
     // loop through each die we have (d20, d12, d10 etc)
@@ -131,8 +156,15 @@ void RollModeGUI::rollSelected()
             // input roll
             _rolls[rollsIndex] = random(1, DIE_TYPES[i] + 1);
             rollsIndex++;
+            _total++;
         }
     }
+}
+void RollModeGUI::resetRolls()
+{
+    // set all rolls to zero. no need to go beyond total
+    std::fill_n(_rolls.begin(), _total - 1, 0);
+    _total = 0;
 }
 
 void RollModeGUI::pushSelectionDice()
@@ -226,19 +258,19 @@ void RollModeGUI::eraseBottomDice()
 // void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
 // {
 //     // num dice per row/col is a simple division. since divion rounds toward 0, we will always have leftover or a perfect fit
-//     int numDicePerRow = resultBoxWidth/sprite.width();
-//     int numDicePerCol = resultBoxHeight/sprite.height(); 
-//     int maxDiceOnPage = numDicePerCol * numDicePerRow;
+//     int maxDicePerRow = resultBoxWidth/sprite.width();
+//     int maxDicePerCol = resultBoxHeight/sprite.height(); 
+//     int maxDiceOnPage = maxDicePerCol * maxDicePerRow;
 //     // we find the remainder of the previous calculation which gives us the amount of pixels we have left to use after space 
 //     // is taken by the amount of sprites we use. we divide that by the amount of die we are using (-1 since the last die in 
 //     //the sequence does not need the padding) to get the space between sprites
-//     int colGapSize = (resultBoxWidth%sprite.width())/(numDicePerRow - 1);
-//     int rowGapSize = (resultBoxHeight%sprite.height())/(numDicePerCol - 1);
+//     int colGapSize = (resultBoxWidth%sprite.width())/(maxDicePerRow - 1);
+//     int rowGapSize = (resultBoxHeight%sprite.height())/(maxDicePerCol - 1);
 //     // finnally this equation gives us the amount of pixels we have left after all that. 
 //     // split it in half to find left padding and top padding. because of the way it populates,
 //     // we do not need to save the right or bottom padding because. 
-//     int paddingLeft = ((resultBoxWidth%sprite.width())%(numDicePerRow - 1))/2;
-//     int paddingTop = ((resultBoxHeight%sprite.height())%(numDicePerCol - 1))/2;
+//     int paddingLeft = ((resultBoxWidth%sprite.width())%(maxDicePerRow - 1))/2;
+//     int paddingTop = ((resultBoxHeight%sprite.height())%(maxDicePerCol - 1))/2;
 
 //     int currentXPlacement = resultBoxX + paddingLeft;
 //     int currentYPlacement = resultBoxY + paddingTop;
@@ -294,10 +326,10 @@ void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY,
     // of the placement area effectivly cancels out one gap, giving us an accurate calculation of have many dice can properly fit with the given gap.
     // sorry future me or other people that see this that find that explanation confusing, I'm not great at explaining the math in my head.
     // but I'm sure you're smart soooooooooo you probably didn't really need the explanation anyway LOL. 
-    int numDicePerRow = (resultBoxWidth + colGapSize)/(sprite.width() + colGapSize);
-    int numDicePerCol = (resultBoxHeight + rowGapSize)/(sprite.height() + rowGapSize); 
+    int maxDicePerRow = (resultBoxWidth + colGapSize)/(sprite.width() + colGapSize);
+    int maxDicePerCol = (resultBoxHeight + rowGapSize)/(sprite.height() + rowGapSize); 
     // self explanitory (i need sleep)
-    int maxDiceOnPage = numDicePerCol * numDicePerRow;
+    int maxDiceOnPage = maxDicePerCol * maxDicePerRow;
     // this is similar to the standard version to find the padding, we just need to find how many pixels are remaining
     // after the previous equation an cut it in half. 
     int paddingLeft = ((resultBoxWidth + colGapSize)%(sprite.width() + colGapSize))/2;
@@ -310,44 +342,131 @@ void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY,
     // set up char array to display. we must convert int to char array
     char buffer[6];
     // shift rolls index based on page
-    int index = page * (maxDiceOnPage);
+    int startIndex = page * (maxDiceOnPage);
     //index of the first die outside of page
     int endIndex = (page + 1) * maxDiceOnPage;
+    int index = 0;
     // loop through each die we have (d20, d12, d10 etc)
     for(int i = 0; i < _dieAmounts.size(); i++)
-    {      
-        // roll i dice j times
-        for(int j = 0; j < _dieAmounts[i]; j++)
+    {   
+        // we have to allign index and _dieAmounts to potray the correct die rolled 
+        if (index + _dieAmounts[i] < startIndex)
         {
-            
-            // if we go over the bounds we have set, reset x and inc y, (if the next die will go over the box we've set)
-            if (currentXPlacement + sprite.width() > resultBoxWidth + resultBoxX)
+            index += _dieAmounts[i];
+        }
+        else
+        {
+            // roll i dice j times
+            for(int j = 0; j < _dieAmounts[i]; j++)
             {
-                currentXPlacement = resultBoxX + paddingLeft;
-                currentYPlacement += sprite.height() + rowGapSize;
+
+                // we need to get I and j on the same page as _rolls or else it will print incorect dice images
+                if(index >= startIndex)
+                {
+                    // if we go over the bounds we have set, reset x and inc y, (if the next die will go over the box we've set)
+                    if (currentXPlacement + sprite.width() > resultBoxWidth + resultBoxX)
+                    {
+                        currentXPlacement = resultBoxX + paddingLeft;
+                        currentYPlacement += sprite.height() + rowGapSize;
+                    }
+                    snprintf(buffer, 6, "%u", _rolls[index]);
+                    pushDiceSprite(sprite, currentXPlacement, currentYPlacement, *imageWidths[i], *imageHeights[i], images[i], buffer);
+                    
+                    currentXPlacement += sprite.width() + colGapSize;
+                    delay(10);
+                }
+                index++;
+                // once we've reached the end of the page
+                if(index >= endIndex)
+                {
+                    return;
+                }
             }
-            snprintf(buffer, 6, "%u", _rolls[index]);
-            pushDiceSprite(sprite, currentXPlacement, currentYPlacement, *imageWidths[i], *imageHeights[i], images[i], buffer);
-            
-            currentXPlacement += sprite.width() + colGapSize;
-            index++;
-            // once we've reached the end of the page
-            if(index == endIndex)
-            {
-                return;
-            }
-            delay(10);
+
         }
     }
 }
 
-void RollModeGUI::populateResultScreenCentered(int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
+void RollModeGUI::populateResultScreenCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
 {
     // num dice per row/col is a simple division. since divion rounds toward 0, we will always have leftover or a perfect fit
-    int numDicePerRow = resultBoxWidth/sprite.width();
-    int numDicePerCol = resultBoxHeight/sprite.height(); 
+    int maxDicePerRow = resultBoxWidth/sprite.width();
+    int maxDicePerCol = resultBoxHeight/sprite.height(); 
+    int maxDiceOnPage = maxDicePerCol * maxDicePerRow;
 
 
+    int numDiceInRow = 0;
+    int numDiceInCol = 0;
+
+    _tft.drawRect(resultBoxX, resultBoxY, resultBoxWidth, resultBoxHeight, TFT_WHITE);
+
+    // set up char array to display. we must convert int to char array
+    char buffer[6];
+
+    // shift rolls index based on page
+    int startIndex = page * (maxDiceOnPage);
+    //index of the first die outside of page
+    int endIndex = (page + 1) * maxDiceOnPage;
+    int index = 0;
+
+    numDiceInRow = std::min(_total - startIndex, maxDicePerRow);
+    numDiceInCol = Functions::divideRoundUp(std::min(_total - startIndex, maxDiceOnPage), maxDicePerRow);
+
+    //the page number entered was greater than the result has and would cause a panic reboot due to a divide by zero
+    if (numDiceInRow <= 0 || numDiceInCol <= 0)
+    {
+        return;
+    }
+
+    int currentXGap = (resultBoxWidth - (numDiceInRow * sprite.width()))/(numDiceInRow + 1);
+    int currentYGap = (resultBoxHeight - (numDiceInCol * sprite.height()))/(numDiceInCol + 1);
+    int currentXPlacement = (resultBoxX + currentXGap);
+    int currentYPlacement = (resultBoxY + currentYGap);
+
+    Serial.printf("%d\n", currentYPlacement);
+    
+    // loop through each die we have (d20, d12, d10 etc)
+    // only actually goes into this one if there are die of that type to roll. meaning if we finish rolling all selected die, we will not enter the loop again. 
+    for(int i = 0; i < _dieAmounts.size(); i++)
+    {   
+        // we have to allign index and _dieAmounts to potray the correct die rolled 
+        if (index + _dieAmounts[i] < startIndex)
+        {
+            index += _dieAmounts[i];
+        }
+        else
+        {
+            // roll i dice j times
+            for(int j = 0; j < _dieAmounts[i]; j++)
+            {
+
+                // we need to get I and j on the same page as _rolls or else it will print incorect dice images
+                if(index >= startIndex)
+                {
+                    // if we go over the bounds we have set, reset x and inc y, (if the next die will go over the box we've set)
+                    if (currentXPlacement + sprite.width() > resultBoxWidth + resultBoxX)
+                    {
+                        numDiceInRow = std::min(_total - index, maxDicePerRow);
+                        currentXGap = (resultBoxWidth - (numDiceInRow * sprite.width()))/(numDiceInRow + 1);
+                        currentXPlacement = (resultBoxX + currentXGap);
+                        currentYPlacement += sprite.height() + currentYGap;
+                    }
+                    snprintf(buffer, 6, "%u", _rolls[index]);
+                    pushDiceSprite(sprite, currentXPlacement, currentYPlacement, *imageWidths[i], *imageHeights[i], images[i], buffer);
+                    
+                    currentXPlacement += sprite.width() + currentXGap;
+                    delay(10);
+                }
+                index++;
+                // once we've reached the end of the page
+                if(index >= endIndex)
+                {
+                    return;
+                }
+            }
+
+        }
+    }
 }
 
 // ===================================================================
