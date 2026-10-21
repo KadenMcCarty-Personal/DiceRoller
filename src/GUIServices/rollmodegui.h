@@ -32,17 +32,21 @@ class RollModeGUI
         void drawBackground();
         // draws background for roll result screen
         void drawResultBackground();
-        /// @brief made to remove the need for the overload of  populateResultScreen because I was tired of changing both of them. 
+        /// @brief IMPORTANT NOTE this function currently handles the modification of _amountOfPages
+        void pushResults();
+        void modifyTotal();
+        /// @brief made to remove the need for the overload of  populateResultBox because I was tired of changing both of them. 
         /// @param length 
         /// @param spriteLength 
         /// @return 
         int dynamicGapCalculation(int length, int spriteLength);
         // I'll keep you commented out for now but consider yourself MARKED FOR DEATH
-        // void populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
-        void populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
+        // void populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        void populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
+        // you escaped the death mark... lucky you...
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite);
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, int colGapSize, int rowGapSize);
-        void populateResultScreenCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        void populateResultBoxCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
         /// @brief Push a sprite to the screen with an image centered on it. 
         /// @param sprite 
         /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
@@ -82,11 +86,15 @@ class RollModeGUI
         // _rolls would look something like {11, 16, 19, 7, 1}. using _dieAmounts we can tell that
         // the first 3 are d20s, the fourth is a d12, and the 5th is a d4. 
         std::array<uint8_t, MAX_ROLL> _rolls;
-        // this is just the total amount of dice that are currently selected to be rolled. 
-        // made into a member variable so we don't have to calculate it every time
-        uint16_t _totalSelected;
+        // total result of all dice rolls, no modifyer
+        int16_t _result;
         // signed int so can be +- (-128 to 127)
-        int8_t _totalModifyer;
+        int16_t _modifier;
         // total rolled
-        int16_t _total;
+        int16_t _totalRolled;
+        // total number of pages that can be displayed
+        uint16_t _amountOfPages;
+        uint16_t _currentResultPage;
+        // TESTING (mayber) its late and I promised id finish TODAY!
+        uint16_t _amountSelected;
 };

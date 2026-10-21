@@ -46,7 +46,10 @@ namespace constants
 
 RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&tft), _lilDice(&tft){
     _bigDice.createSprite(Images::bigDieSpriteWidth, Images::bigDieSpriteHeight);
-    _medDice.createSprite(Images::medDieSpriteWidth, Images::medDieSpriteHeight);
+    _bigDice.setTextSize(3);
+    _bigDice.setTextColor(TFT_WHITE);
+    _bigDice.setTextFont(1);
+    _bigDice.setTextDatum(CC_DATUM);
 
     // init the lil dice sprite, the text there will be different
     _lilDice.createSprite(Images::lilDieSpriteWidth, Images::lilDieSpriteHeight);
@@ -54,7 +57,8 @@ RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&t
     _lilDice.setTextColor(TFT_WHITE);
     _lilDice.setTextFont(2);
     _lilDice.setTextDatum(CC_DATUM);
-
+    
+    _medDice.createSprite(Images::medDieSpriteWidth, Images::medDieSpriteHeight);
     _medDice.setTextSize(2);
     _medDice.setTextColor(TFT_WHITE);
     _medDice.setTextFont(1);
@@ -62,84 +66,108 @@ RollModeGUI::RollModeGUI(TFT_eSPI& tft) : _tft(tft), _bigDice(&tft), _medDice(&t
 
     _dieAmounts = {0, 0, 0, 0, 0, 0};
     _navigation = 0;
-    _total = 0;
+    _totalRolled = 0;
+    _amountSelected = 0;
     _rolls = {};
 }
 
+enum class Screen {SELECT, RESULTS};
+Screen screen = Screen::SELECT;
 
 void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed)
 {
-    // -1 if left, +1 if right 0 if neither or both, for navigation
-    // First we are updating navigation 
-    int navDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
-    if (navDelta != 0)
+    switch(screen)
     {
-        // loops back to 0/nav max using modulo ("it doesn't matter" -Yuji)
-        // ok changed functions.h to a namespace PLEASE WORK IM SO TIRED
-        _navigation = Functions::wrapAround<int>(_navigation + navDelta, 0, _dieAmounts.size() - 1);
-        // after we change which die is selected, update the screen
-        pushSelectionDice();
-    }
+        case Screen::SELECT:
+        {
+            // -1 if left, +1 if right 0 if neither or both, for navigation
+            // First we are updating navigation 
+            int navDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
+            if (navDelta != 0)
+            {
+                // loops back to 0/nav max using modulo ("it doesn't matter" -Yuji)
+                // ok changed functions.h to a namespace PLEASE WORK IM SO TIRED
+                _navigation = Functions::wrapAround<int>(_navigation + navDelta, 0, _dieAmounts.size() - 1);
+                // after we change which die is selected, update the screen
+                pushSelectionDice();
+            }
+        
+            // change the amount of dice that will be rolled if add or subtract is pressed based on which is selected.
+            // add one for + and subtract one for -
+            // make sure we dont go into the negatives with constrain
+            int addDelta = (subtractPressed ? -1 : 0) + (addPressed ? 1 : 0);
+            if (addDelta != 0)
+            {
+                std::array<uint8_t, 6> prevDieAmounts = _dieAmounts;
+                if (_dieAmounts[_navigation] != constrain(_dieAmounts[_navigation] + addDelta, 0, 255))
+                {
+                    _amountSelected += addDelta;
+                    _dieAmounts[_navigation] += addDelta;
+                    pushBottomDice(prevDieAmounts);
+                }
+            }
+        
+            // lastly, check if the roll button has been pressed
+            if (rollPressed)
+            {
+                screen = Screen::RESULTS;
+                //TESTING (maybe)
+                // if nothing selected, just add the current die we are on to selection and roll
+                if (_amountSelected == 0)
+                {
+                    _amountSelected++;
+                    _dieAmounts[_navigation]++;
+                }
+                _currentResultPage = 0;
+                rollSelected();
+                enter();
+            }
+            break;
+        }
+        case Screen::RESULTS:
+        {
+            // if left or right is pressed while in result page we cycle through pages
+            int pageDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
+            //only change pages if the page actually would change
+            if (pageDelta != 0 && _amountOfPages > 1 && _currentResultPage != constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1))
+            {
+                _currentResultPage = constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1);
+                // after we change which page is selected, update the screen
+                pushResults();
+            }
 
-    // change the amount of dice that will be rolled if add or subtract is pressed based on which is selected.
-    // add one for + and subtract one for -
-    // make sure we dont go into the negatives with constrain
-    int addDelta = (subtractPressed ? -1 : 0) + (addPressed ? 1 : 0);
-    if (addDelta != 0)
-    {
-        std::array<uint8_t, 6> prevDieAmounts = _dieAmounts;
-        _dieAmounts[_navigation] = constrain(_dieAmounts[_navigation] + addDelta, 0, 255);
-        _totalSelected += addDelta;
-        pushBottomDice(prevDieAmounts);
-    }
+            int addDelta = (subtractPressed ? -1 : 0) + (addPressed ? 1 : 0);
+            if (addDelta != 0)
+            {
+                _modifier += addDelta;
+                // TOOD I WANNA DO THIS NOW BUT DONT 
+                modifyTotal();
+            }
 
-    // lastly, check if the roll button has been pressed
-    if (rollPressed)
-    {
-        rollSelected();
-        drawResultBackground();
-        // populateResultScreen( 
-        //     0,
-        //     static_cast<int>(constants::RESULT_PLACEMENT_X), 
-        //     static_cast<int>(constants::RESULT_PLACEMENT_Y), 
-        //     static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
-        //     static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
-        //     _lilDice,
-        //     Images::lilDiceWidth, Images::lilDiceHeight, 
-        //     Images::lilDice, 
-        //     dynamicGapCalculation(static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), _lilDice.width()), 0
-        // );
-        // populateResultScreen( 
-        //     1,
-        //     static_cast<int>(constants::RESULT_PLACEMENT_X), 
-        //     static_cast<int>(constants::RESULT_PLACEMENT_Y), 
-        //     static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
-        //     static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
-        //     _medDice,
-        //     Images::medDiceWidth, Images::medDiceHeight, 
-        //     Images::medDice, 
-        //     dynamicGapCalculation(static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), _medDice.width()), dynamicGapCalculation(static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), _medDice.height())
-        // );
-        populateResultScreenCentered( 
-            1,
-            static_cast<int>(constants::RESULT_PLACEMENT_X), 
-            static_cast<int>(constants::RESULT_PLACEMENT_Y), 
-            static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
-            static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
-            _medDice,
-            Images::medDiceWidth, Images::medDiceHeight, 
-            Images::medDice
-        );
-        // populateResultScreen(_medDice, Images::medDiceWidth, Images::medDiceHeight, Images::medDice);
-        // populateResultScreen(_medDice, Images::medDiceWidth, Images::medDiceHeight, Images::medDice, 10, 10);
-
+            // lastly, check if the roll button has been pressed we switch back to selection screen
+            if (rollPressed)
+            {
+                screen = Screen::SELECT;
+                enter();
+            }
+            break;
+        }
     }
 }
 void RollModeGUI::enter()
 {
-    drawBackground();
-    pushSelectionDice();
-    pushBottomDice();
+    switch(screen)
+    {
+        case Screen::SELECT:
+            drawBackground();
+            pushSelectionDice();
+            pushBottomDice();
+            break;
+        case Screen::RESULTS:
+            drawResultBackground();
+            pushResults();
+            break;
+    }
 }
 
 void RollModeGUI::rollSelected()
@@ -155,16 +183,19 @@ void RollModeGUI::rollSelected()
         {
             // input roll
             _rolls[rollsIndex] = random(1, DIE_TYPES[i] + 1);
+            _result += _rolls[rollsIndex];
             rollsIndex++;
-            _total++;
+            _totalRolled++;
         }
     }
 }
 void RollModeGUI::resetRolls()
 {
     // set all rolls to zero. no need to go beyond total
-    std::fill_n(_rolls.begin(), _total - 1, 0);
-    _total = 0;
+    std::fill_n(_rolls.begin(), _totalRolled - 1, 0);
+    _totalRolled = 0;
+    _result = 0;
+    _modifier = 0;
 }
 
 void RollModeGUI::pushSelectionDice()
@@ -254,8 +285,87 @@ void RollModeGUI::eraseBottomDice()
     );
 }
 
-
-// void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
+void RollModeGUI::pushResults()
+{
+    // TOOD (maybe): make this dynamic, magic numbers are typically no go but I may make an exception, we shall see
+    // TEMP FOR TESTING 
+    drawResultBackground();
+    // TEMP FOR TESTING
+    if(_totalRolled <= 3)
+    {
+        _amountOfPages = 1;
+        populateResultBoxCentered( 
+            0,
+            static_cast<int>(constants::RESULT_PLACEMENT_X), 
+            static_cast<int>(constants::RESULT_PLACEMENT_Y), 
+            static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
+            static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
+            _bigDice,
+            Images::bigDiceWidth, Images::bigDiceHeight, 
+            Images::bigDice
+        );
+    }
+    else if(_totalRolled <= 18)
+    {
+        _amountOfPages = 1;
+        populateResultBoxCentered( 
+            0,
+            static_cast<int>(constants::RESULT_PLACEMENT_X), 
+            static_cast<int>(constants::RESULT_PLACEMENT_Y), 
+            static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
+            static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
+            _medDice,
+            Images::medDiceWidth, Images::medDiceHeight, 
+            Images::medDice
+        );
+    }
+    else
+    {
+        _amountOfPages = getPageAmount(
+            constants::RESULT_PLACEMENT_WIDTH, 
+            constants::RESULT_PLACEMENT_HEIGHT, _lilDice, 
+            dynamicGapCalculation(constants::RESULT_PLACEMENT_WIDTH, _lilDice.width()), 
+            dynamicGapCalculation(constants::RESULT_PLACEMENT_HEIGHT, _lilDice.height())
+        );
+        populateResultBox( 
+            _currentResultPage,
+            static_cast<int>(constants::RESULT_PLACEMENT_X), 
+            static_cast<int>(constants::RESULT_PLACEMENT_Y), 
+            static_cast<int>(constants::RESULT_PLACEMENT_WIDTH), 
+            static_cast<int>(constants::RESULT_PLACEMENT_HEIGHT), 
+            _lilDice,
+            Images::lilDiceWidth, Images::lilDiceHeight, 
+            Images::lilDice,
+            dynamicGapCalculation(constants::RESULT_PLACEMENT_WIDTH, _lilDice.width()),
+            dynamicGapCalculation(constants::RESULT_PLACEMENT_HEIGHT, _lilDice.height())
+        );
+    }
+    //maybe not this in future
+    modifyTotal();
+}
+// TOOOOOOD MAKE THIS DYNAMIC HOLY DONT HAVE TIME NOW LOOOOL
+void RollModeGUI::modifyTotal()
+{
+    _tft.fillRect(0, 211, 330, 29, TFT_BLACK);
+    char buffer[30];
+    _tft.setTextFont(1);
+    _tft.setTextSize(2);
+    _tft.setTextColor(TFT_WHITE);
+    if (_amountOfPages > 1)
+    {
+        _tft.setTextDatum(BL_DATUM);
+        _tft.setCursor(0, constants::SCREEN_HEIGHT);
+        snprintf(buffer, 25,"%d/%u", _currentResultPage + 1, _amountOfPages);
+        _tft.drawString(buffer, 0, constants::SCREEN_HEIGHT - 3);
+    }
+    _tft.setTextDatum(BR_DATUM);
+    if(_modifier != 0)
+       snprintf(buffer, 30,"Total: %d (mod: %d)", _result + _modifier, _modifier); 
+    else
+        snprintf(buffer, 30,"Total: %d", _result);
+    _tft.drawString(buffer, constants::SCREEN_WIDTH, constants::SCREEN_HEIGHT - 3);
+}
+// void RollModeGUI::populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
 // {
 //     // num dice per row/col is a simple division. since divion rounds toward 0, we will always have leftover or a perfect fit
 //     int maxDicePerRow = resultBoxWidth/sprite.width();
@@ -312,14 +422,18 @@ int RollModeGUI::dynamicGapCalculation(int length, int spriteLength)
 
 int RollModeGUI::getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, int colGapSize, int rowGapSize)
 {
-    // formula ripped straight from populateResultScreen, dividing the total number of dice
+    // formula ripped straight from populateResultBox, dividing the total number of dice
     int temp = ((resultBoxWidth + colGapSize)/(sprite.width() + colGapSize))*((resultBoxHeight + rowGapSize)/(sprite.height() + rowGapSize));
     // ngl I was NOT smart enough to come up with this formula so do not credit me. always rounds up
-    return (_total + temp - 1)/temp; 
+    return (_totalRolled + temp - 1)/temp; 
 }
 
-void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize)
+//TOOOOOD padding top is not working...
+void RollModeGUI::populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize)
 {
+    // TESTING
+    _tft.fillRect(resultBoxX, resultBoxY, resultBoxWidth, resultBoxHeight, TFT_BLACK);
+    // TESTING
     // since we are basing amount of dice we can place based in a row or col based on the padding, not the other way around, the calculations are a little different
     // divide total area by width of sprite + gap size. The final die in row/col does NOT place the gap padding to its right like the others
     // meaning there is one less "gap" then there are sprites being pushed per row/col. to ammend this, adding the gap size to width/height 
@@ -335,6 +449,7 @@ void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY,
     int paddingLeft = ((resultBoxWidth + colGapSize)%(sprite.width() + colGapSize))/2;
     int paddingTop = ((resultBoxHeight + rowGapSize)%(sprite.height() + rowGapSize))/2;
 
+    // TESTING
     _tft.drawRect(resultBoxX, resultBoxY, resultBoxWidth, resultBoxHeight, TFT_WHITE);
 
     int currentXPlacement = resultBoxX + paddingLeft;
@@ -387,8 +502,9 @@ void RollModeGUI::populateResultScreen(int page, int resultBoxX, int resultBoxY,
     }
 }
 
-void RollModeGUI::populateResultScreenCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
+void RollModeGUI::populateResultBoxCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images)
 {
+    _tft.fillRect(resultBoxX, resultBoxY, resultBoxWidth, resultBoxHeight, TFT_BLACK);
     // num dice per row/col is a simple division. since divion rounds toward 0, we will always have leftover or a perfect fit
     int maxDicePerRow = resultBoxWidth/sprite.width();
     int maxDicePerCol = resultBoxHeight/sprite.height(); 
@@ -409,8 +525,8 @@ void RollModeGUI::populateResultScreenCentered(int page, int resultBoxX, int res
     int endIndex = (page + 1) * maxDiceOnPage;
     int index = 0;
 
-    numDiceInRow = std::min(_total - startIndex, maxDicePerRow);
-    numDiceInCol = Functions::divideRoundUp(std::min(_total - startIndex, maxDiceOnPage), maxDicePerRow);
+    numDiceInRow = std::min(_totalRolled - startIndex, maxDicePerRow);
+    numDiceInCol = Functions::divideRoundUp(std::min(_totalRolled - startIndex, maxDiceOnPage), maxDicePerRow);
 
     //the page number entered was greater than the result has and would cause a panic reboot due to a divide by zero
     if (numDiceInRow <= 0 || numDiceInCol <= 0)
@@ -446,7 +562,7 @@ void RollModeGUI::populateResultScreenCentered(int page, int resultBoxX, int res
                     // if we go over the bounds we have set, reset x and inc y, (if the next die will go over the box we've set)
                     if (currentXPlacement + sprite.width() > resultBoxWidth + resultBoxX)
                     {
-                        numDiceInRow = std::min(_total - index, maxDicePerRow);
+                        numDiceInRow = std::min(_totalRolled - index, maxDicePerRow);
                         currentXGap = (resultBoxWidth - (numDiceInRow * sprite.width()))/(numDiceInRow + 1);
                         paddingLeft = (resultBoxWidth-(((sprite.width() + currentXGap) * numDiceInRow) + currentXGap))/2;
                         currentXPlacement = (resultBoxX + currentXGap + paddingLeft);
