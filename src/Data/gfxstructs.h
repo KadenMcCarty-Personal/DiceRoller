@@ -15,7 +15,7 @@ namespace GFXStructs
 
         int rowAmount; 
         int cellAmount;
-
+        
         int yGap; 
         int paddingTop; 
     };
