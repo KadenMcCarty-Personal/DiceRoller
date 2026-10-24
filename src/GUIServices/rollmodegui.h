@@ -6,6 +6,7 @@
 
 #include "../Data/images.h"
 #include "../Services/functions.h"
+#include "../Data/gfxstructs.h"
 
 class RollModeGUI
 {
@@ -16,6 +17,7 @@ class RollModeGUI
         // function to call every loop, manges pretty much everything
         void update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed);
     private: 
+
         //this just sets backend arrays 'n stuff like _rolls
         void rollSelected();
         void resetRolls();
@@ -34,19 +36,22 @@ class RollModeGUI
         void drawResultBackground();
         /// @brief IMPORTANT NOTE this function currently handles the modification of _amountOfPages
         void pushResults();
+        void pushOneDie();
         void modifyTotal();
         /// @brief made to remove the need for the overload of  populateResultBox because I was tired of changing both of them. 
         /// @param length 
         /// @param spriteLength 
         /// @return 
         int dynamicGapCalculation(int length, int spriteLength);
-        // I'll keep you commented out for now but consider yourself MARKED FOR DEATH
-        // void populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        
         void populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize);
+        
         // you escaped the death mark... lucky you...
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite);
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, int colGapSize, int rowGapSize);
         void populateResultBoxCentered(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images);
+        
+        
         /// @brief Push a sprite to the screen with an image centered on it. 
         /// @param sprite 
         /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
@@ -54,7 +59,7 @@ class RollModeGUI
         /// @param imageWidth 
         /// @param imageHeight 
         /// @param image 
-        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image);
+        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, Images::Image image);
         /// @brief Push a sprite to the screen with an image centered on it. Includes a char array centered on sprite. 
         /// @param sprite 
         /// @param x global placement on screen based on sprite's center point coordinates, NOT sprite's top left corner.
@@ -63,7 +68,14 @@ class RollModeGUI
         /// @param imageHeight 
         /// @param image 
         /// @param printValue char array to display on sprite
-        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, int32_t imageWidth, int32_t imageHeight, const uint16_t *image, char printValue[]);
+        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, Images::Image image, char printValue[]);
+
+        void centeredResults(int page, TFT_eSprite& sprite, const Images::Image* images);
+        GFXStructs::GridPlacementData calculateCenteredGrid(GFXStructs::Rect box, int cellWidth, int cellHeight, int amountRolled, int page);
+        GFXStructs::RowPlacementData calculateCenteredRowPlacementData(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index);
+        void populateResultBoxNewCentered(int page, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite& sprite, const Images::Image* images);
+
+        int getDieType(int dieIndex);
 
         // consts that are used here in the header file
         static constexpr size_t NUM_DICE_TYPES = 6;
