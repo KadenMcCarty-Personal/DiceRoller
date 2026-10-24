@@ -11,7 +11,7 @@
 class RollModeGUI
 {
     public:
-        explicit RollModeGUI(TFT_eSPI& tft);
+        explicit RollModeGUI(TFT_eSPI& tft, LCDInterface &lcdInterface);
         //function to call when switching to this mode. draws everything back to where it was when we left
         void enter();
         // function to call every loop, manges pretty much everything
@@ -50,9 +50,8 @@ class RollModeGUI
 
         GFXStructs::GridPlacementData calculateGridDataCentered(GFXStructs::Rect box, int cellWidth, int cellHeight, int amountRolled, int page);
         GFXStructs::RowPlacementData calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index);
-        void populateResultBoxNewCentered(int page, uint8_t* rolls, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite& sprite, const Images::Image* images);
+        void populateResultBoxCentered(int page, uint8_t* rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite& sprite, const Images::Image* images);
         
-        int getRolledDieType(int dieIndex);
 
         /// @brief Push a sprite to the screen with an image centered on it. 
         void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, Images::Image image);
@@ -75,9 +74,9 @@ class RollModeGUI
         TFT_eSPI& _tft;
 
         // we will use sprites for the main roll mode navigation to avoid flickering
-        TFT_eSprite _bigDice;
-        TFT_eSprite _medDice;
-        TFT_eSprite _lilDice;
+        TFT_eSprite& _bigDice;
+        TFT_eSprite& _medDice;
+        TFT_eSprite& _lilDice;
 
         // navigation through this page
         uint8_t _navigation;
@@ -89,6 +88,7 @@ class RollModeGUI
         // _rolls would look something like {11, 16, 19, 7, 1}. using _dieAmounts we can tell that
         // the first 3 are d20s, the fourth is a d12, and the 5th is a d4. 
         std::array<uint8_t, MAX_ROLL> _rolls;
+        std::array<uint8_t, MAX_ROLL> _rolledDieTypeIndex;
         // total result of all dice rolls, no modifier
         int16_t _result;
         //modifier to result

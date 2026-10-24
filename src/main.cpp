@@ -2,9 +2,10 @@
 #include <TFT_eSPI.h>
 
 #include "PeripheralDA/button.h"
-#include "GUIServices/rollmodegui.h"
-#include "GUIServices/savemodegui.h"
-#include "GUIServices/attackmodegui.h"
+#include "PeripheralDA/lcdservices.h"
+#include "GUIModes/rollmodegui.h"
+#include "GUIModes/savemodegui.h"
+#include "GUIModes/attackmodegui.h"
 #include "Data/pins.h"
 #include "Data/images.h"
 
@@ -19,6 +20,7 @@ Button buttonMode(Pins::kButtonMode);
 // create the tft spi object
 TFT_eSPI tft = TFT_eSPI(); 
 
+LCDServices lcdServices(tft);
 // init gui service objects
 RollModeGUI rollMode(tft);
 SaveModeGUI saveMode(tft);
@@ -124,11 +126,11 @@ void update()
       break;
 
     case Mode::SAVE:
-
+      saveMode.update(buttonLeft.pressed(), buttonRight.pressed(), buttonAdd.pressed(), buttonSubtract.pressed(), buttonRoll.pressed());
       break;
 
     case Mode::ATTACK:
-
+      attackMode.update(buttonLeft.pressed(), buttonRight.pressed(), buttonAdd.pressed(), buttonSubtract.pressed(), buttonRoll.pressed());
       break;
     default:
       break;

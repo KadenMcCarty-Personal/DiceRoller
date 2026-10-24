@@ -117,8 +117,6 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
             screen = Screen::RESULTS;
             _currentResultPage = 0;
 
-            // TESTING (maybe)
-            
             //  if nothing selected, just add the current die we are on to selection and roll, then remove it from selection once rolled. 
             if (_amountSelected == 0)
             {
@@ -143,6 +141,7 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
         {
             _currentResultPage = constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1);
             // after we change which page is selected, update the screen
+            drawResultBackground();
             pushResults();
         }
 
@@ -183,8 +182,6 @@ void RollModeGUI::enter()
 void RollModeGUI::rollSelected()
 {
     resetRolls();
-    // keep track of where we are on _rolls
-    int rollsIndex = 0;
     // loop through each die we have (d20, d12, d10 etc)
     for (int i = 0; i < _dieAmounts.size(); i++)
     {
@@ -192,9 +189,9 @@ void RollModeGUI::rollSelected()
         for (int j = 0; j < _dieAmounts[i]; j++)
         {
             // input roll
-            _rolls[rollsIndex] = random(1, DIE_TYPES[i] + 1);
-            _result += _rolls[rollsIndex];
-            rollsIndex++;
+            _rolls[_amountRolled] = random(1, DIE_TYPES[i] + 1);
+            _rolledDieTypeIndex[_amountRolled] = i;
+            _result += _rolls[_amountRolled];
             _amountRolled++;
         }
     }
@@ -291,9 +288,6 @@ void RollModeGUI::eraseBottomDice()
 void RollModeGUI::pushResults()
 {
     // TOOD (maybe): make this dynamic, magic numbers are typically no go but I may make an exception, we shall see
-    // TEMP FOR TESTING
-    drawResultBackground();
-    // TEMP FOR TESTING
     if (_amountRolled <= 3)
     {
         _amountOfPages = 1;
@@ -370,7 +364,7 @@ void RollModeGUI::centeredResults(int page, TFT_eSprite &sprite, const Images::I
     // set up grid data
     GFXStructs::GridPlacementData placementData = calculateGridDataCentered(resultBox, sprite.width(), sprite.height(), _amountRolled, page);
     // place dice
-    populateResultBoxNewCentered(page, _rolls.data(), resultBox, placementData, sprite, images);
+    populateResultBoxCentered(page, _rolls.data(), _rolledDieTypeIndex.data(), resultBox, placementData, sprite, images);
 }
 void RollModeGUI::centeredResultsOneDie(TFT_eSprite &sprite, const Images::Image *images)
 {
@@ -379,7 +373,7 @@ void RollModeGUI::centeredResultsOneDie(TFT_eSprite &sprite, const Images::Image
     // set up grid data
     GFXStructs::GridPlacementData placementData = calculateGridDataCentered(resultBox, sprite.width(), sprite.height(), 1, 0);
     // place dice
-    populateResultBoxNewCentered(0, _rolls.data(), resultBox, placementData, sprite, images);
+    populateResultBoxCentered(0, _rolls.data(), _rolledDieTypeIndex.data(), resultBox, placementData, sprite, images);
 }
 GFXStructs::RowPlacementData RollModeGUI::calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index)
 {
@@ -423,13 +417,8 @@ GFXStructs::GridPlacementData RollModeGUI::calculateGridDataCentered(GFXStructs:
 
     return {cellWidth, cellHeight, maxCellsPerRow, maxCellsPerCol, maxCellsOnPage, cellsInCol, cellAmount, yGap, paddingTop};
 }
-void RollModeGUI::populateResultBoxNewCentered(int page, uint8_t *rolls, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite &sprite, const Images::Image *images)
+void RollModeGUI::populateResultBoxCentered(int page, uint8_t *rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite &sprite, const Images::Image *images)
 {
-    // TESTING
-    _tft.fillRect(box.x, box.y, box.width, box.height, TFT_BLACK);
-    // TESTING
-    _tft.drawRect(box.x, box.y, box.width, box.height, TFT_WHITE);
-
     // create buffer for writing to sprite
     char buffer[6];
     // set the offset for accessing the dice from array
@@ -447,22 +436,10 @@ void RollModeGUI::populateResultBoxNewCentered(int page, uint8_t *rolls, GFXStru
 
         // print on those lil dice
         snprintf(buffer, 6, "%u", rolls[i + indexOffset]);
-        pushDiceSprite(sprite, x, y, images[getRolledDieType(i + indexOffset)], buffer);
+        pushDiceSprite(sprite, x, y, images[rollImageIndex[i + indexOffset]], buffer);
     }
 }
-int RollModeGUI::getRolledDieType(int dieIndex)
-{
-    int currIndex = 0;
-    for (int i = 0; i < NUM_DICE_TYPES; i++)
-    {
-        if (currIndex + _dieAmounts[i] > dieIndex)
-        {
-            return i;
-        }
-        currIndex += _dieAmounts[i];
-    }
-    return -1;
-}
+
 // TOOOOOD padding top is not working...
 // void RollModeGUI::populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize)
 // {
@@ -539,20 +516,23 @@ void RollModeGUI::drawBackground()
 {
     // SUBJECT TO CHANGE, FIRST ITERATION FOR TESTING AND STUFF
     _tft.fillScreen(0x0);
+    _tft.pushImage(6, 13, 302, 225, Images::image_paint_204_pixels);
     // ellipse 1
-    _tft.drawEllipse(330, 2, 59, 55, 0xFFFF);
+    // _tft.drawEllipse(330, 2, 59, 55, 0xFFFF);
     // string 2
     _tft.setTextColor(0xFFFF);
     _tft.setTextSize(2);
+    _tft.setTextDatum(TL_DATUM);
     _tft.drawString("Roll Mode", 7, 6);
-    // paint 4
-    _tft.drawBitmap(11, 15, Images::image_paint_4_bits, 280, 204, 0xFFFF);
+
+    // ellipse 1
+    _tft.drawEllipse(326, 0, 45, 45, 0x2104);
+    // ellipse 1
+    _tft.drawEllipse(310, 13, 55, 55, 0x2104);
     // line 6
     _tft.drawLine(6, 227, 313, 227, 0xFFFF);
-    // paint 7
-    _tft.drawBitmap(22, 17, Images::image_paint_7_bits, 265, 154, 0xFFFF);
     // ellipse 1
-    _tft.drawEllipse(343, -13, 59, 55, 0xFFFF);
+    // _tft.drawEllipse(343, -13, 59, 55, 0xFFFF);
     // ButtonLeftSmall
     _tft.drawBitmap(84, 111, Images::image_ButtonLeftSmall_bits, 6, 10, 0xFFFF);
     // ButtonRightSmall
@@ -562,8 +542,8 @@ void RollModeGUI::drawResultBackground()
 {
     // SUBJECT TO CHANGE, FIRST ITERATION FOR TESTING AND STUFF
     _tft.fillScreen(0x0);
-    _tft.drawBitmap(11, 15, Images::image_paint_4_bits, 280, 204, 0xFFFF);
-    _tft.drawBitmap(22, 17, Images::image_paint_7_bits, 265, 154, 0xFFFF);
+    _tft.pushImage(6, 13, 302, 225, Images::image_paint_204_pixels);
+    
 }
 
 void RollModeGUI::pushDiceSprite(TFT_eSprite &sprite, int32_t x, int32_t y, Images::Image image)
