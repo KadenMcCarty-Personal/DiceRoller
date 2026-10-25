@@ -43,27 +43,10 @@ namespace constants
     constexpr uint16_t PIXELS_BETWEEN_LIL_BOTTOM_DICE = 55;
 }
 
-RollModeGUI::RollModeGUI(TFT_eSPI &tft) : _tft(tft), _bigDice(&tft), _medDice(&tft), _lilDice(&tft)
+RollModeGUI::RollModeGUI(TFT_eSPI& tft, LCDServices &lcdServices) :
+_tft(tft),
+_lcdServices(lcdServices)
 {
-    _bigDice.createSprite(Images::bigDieSpriteWidth, Images::bigDieSpriteHeight);
-    _bigDice.setTextSize(3);
-    _bigDice.setTextColor(TFT_WHITE);
-    _bigDice.setTextFont(1);
-    _bigDice.setTextDatum(CC_DATUM);
-
-    // init the lil dice sprite, the text there will be different
-    _lilDice.createSprite(Images::lilDieSpriteWidth, Images::lilDieSpriteHeight);
-    _lilDice.setTextSize(1);
-    _lilDice.setTextColor(TFT_WHITE);
-    _lilDice.setTextFont(2);
-    _lilDice.setTextDatum(CC_DATUM);
-
-    _medDice.createSprite(Images::medDieSpriteWidth, Images::medDieSpriteHeight);
-    _medDice.setTextSize(2);
-    _medDice.setTextColor(TFT_WHITE);
-    _medDice.setTextFont(1);
-    _medDice.setTextDatum(CC_DATUM);
-
     _dieAmounts = {0, 0, 0, 0, 0, 0};
     _navigation = 0;
     _amountRolled = 0;
@@ -214,9 +197,9 @@ void RollModeGUI::pushSelectionDice()
 
     // push the new three dice. for these we use _navigation which tells us where to go
     // first draw left dice
-    pushDiceSprite(_medDice, constants::LEFT_DIE_X, constants::LEFT_DIE_Y, Images::medDice[navToDec]);
-    pushDiceSprite(_bigDice, constants::CENTER_DIE_X, constants::CENTER_DIE_Y, Images::bigDice[_navigation]);
-    pushDiceSprite(_medDice, constants::RIGHT_DIE_X, constants::RIGHT_DIE_Y, Images::medDice[navToInc]);
+    _lcdServices.pushDiceSprite(LCDServices::Sprites::MEDDICE, constants::LEFT_DIE_X, constants::LEFT_DIE_Y, Images::medDice[navToDec]);
+    _lcdServices.pushDiceSprite(LCDServices::Sprites::BIGDICE, constants::CENTER_DIE_X, constants::CENTER_DIE_Y, Images::bigDice[_navigation]);
+    _lcdServices.pushDiceSprite(LCDServices::Sprites::MEDDICE, constants::RIGHT_DIE_X, constants::RIGHT_DIE_Y, Images::medDice[navToInc]);
 }
 // TOOD: SET UP MAX AND REMOVE x WHEN REACHING TRIPLE DIGITS
 void RollModeGUI::pushBottomDice()
@@ -235,8 +218,8 @@ void RollModeGUI::pushBottomDice()
             // set up char array to display. we must convert int to char array
             char buffer[6];
             snprintf(buffer, 6, "x%u", _dieAmounts[i]);
-            pushDiceSprite(
-                _lilDice,
+            _lcdServices.pushDiceSprite(
+                LCDServices::Sprites::LILDICE,
                 constants::FIRST_LIL_DIE_X + placement * constants::PIXELS_BETWEEN_LIL_BOTTOM_DICE,
                 constants::FIRST_LIL_DIE_Y,
                 Images::lilDice[i],
@@ -264,8 +247,8 @@ void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
             // set up char array to display. we must convert int to char array
             char buffer[6];
             snprintf(buffer, 6, "x%u", _dieAmounts[i]);
-            pushDiceSprite(
-                _lilDice,
+            _lcdServices.pushDiceSprite(
+                LCDServices::Sprites::LILDICE,
                 constants::FIRST_LIL_DIE_X + placement * constants::PIXELS_BETWEEN_LIL_BOTTOM_DICE,
                 constants::FIRST_LIL_DIE_Y,
                 Images::lilDice[i],
@@ -275,15 +258,7 @@ void RollModeGUI::pushBottomDice(std::array<uint8_t, 6> prevDieAmounts)
         placement += (_dieAmounts[i] > 0 ? 1 : 0);
     }
 }
-void RollModeGUI::eraseBottomDice()
-{
-    _tft.fillRect(
-        constants::FIRST_LIL_DIE_X,
-        constants::FIRST_LIL_DIE_Y,
-        constants::SCREEN_WIDTH, // screen width
-        Images::lilDieSpriteHeight,
-        TFT_BLACK);
-}
+
 
 void RollModeGUI::pushResults()
 {
@@ -291,53 +266,27 @@ void RollModeGUI::pushResults()
     if (_amountRolled <= 3)
     {
         _amountOfPages = 1;
-        centeredResults(0, _bigDice, Images::bigDice);
+        centeredResults(0, LCDServices::Sprites::BIGDICE, Images::bigDice);
     }
     else if (_amountRolled <= 18)
     {
         _amountOfPages = 1;
-        centeredResults(0, _medDice, Images::medDice);
+        centeredResults(0, LCDServices::Sprites::MEDDICE, Images::medDice);
     }
     else
     {
         _amountOfPages = getPageAmount(
             constants::RESULT_PLACEMENT_WIDTH,
-            constants::RESULT_PLACEMENT_HEIGHT, _lilDice,
+            constants::RESULT_PLACEMENT_HEIGHT, LCDServices::Sprites::LILDICE,
             0,
             0);
-        centeredResults(_currentResultPage, _lilDice, Images::lilDice);
+        centeredResults(_currentResultPage, LCDServices::Sprites::LILDICE, Images::lilDice);
     }
     // maybe not this in future
     modifyTotal();
 }
 
-void RollModeGUI::pushOneDie()
-{
-    centeredResults(0, _bigDice, Images::bigDice);
-}
 
-// TOOOOOOD MAKE THIS DYNAMIC HOLY DONT HAVE TIME NOW LOOOOL
-void RollModeGUI::modifyTotal()
-{
-    _tft.fillRect(0, 211, 330, 29, TFT_BLACK);
-    char buffer[30];
-    _tft.setTextFont(1);
-    _tft.setTextSize(2);
-    _tft.setTextColor(TFT_WHITE);
-    if (_amountOfPages > 1)
-    {
-        _tft.setTextDatum(BL_DATUM);
-        _tft.setCursor(0, constants::SCREEN_HEIGHT);
-        snprintf(buffer, 25, "%d/%u", _currentResultPage + 1, _amountOfPages);
-        _tft.drawString(buffer, 0, constants::SCREEN_HEIGHT - 3);
-    }
-    _tft.setTextDatum(BR_DATUM);
-    if (_modifier != 0)
-        snprintf(buffer, 30, "Total: %d (mod: %d)", _result + _modifier, _modifier);
-    else
-        snprintf(buffer, 30, "Total: %d", _result);
-    _tft.drawString(buffer, constants::SCREEN_WIDTH, constants::SCREEN_HEIGHT - 3);
-}
 
 // MAKRED FOR DEATH
 int RollModeGUI::dynamicGapCalculation(int length, int spriteLength)
@@ -348,97 +297,26 @@ int RollModeGUI::dynamicGapCalculation(int length, int spriteLength)
     return (length % spriteLength) / (length / spriteLength - 1);
 }
 
-int RollModeGUI::getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite &sprite, int colGapSize, int rowGapSize)
+int RollModeGUI::getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum, int colGapSize, int rowGapSize)
 {
     // formula ripped straight from populateResultBox, dividing the total number of dice
-    int temp = ((resultBoxWidth + colGapSize) / (sprite.width() + colGapSize)) * ((resultBoxHeight + rowGapSize) / (sprite.height() + rowGapSize));
+    int temp = ((resultBoxWidth + colGapSize) / (_lcdServices.getSpriteWidth(spriteEnum) + colGapSize)) * ((resultBoxHeight + rowGapSize) / (_lcdServices.getSpriteHeight(spriteEnum) + rowGapSize));
     // ngl I was NOT smart enough to come up with this formula so do not credit me. always rounds up
     return (_amountRolled + temp - 1) / temp;
 }
 
 
-void RollModeGUI::centeredResults(int page, TFT_eSprite &sprite, const Images::Image *images)
+void RollModeGUI::centeredResults(int page, LCDServices::Sprites spriteEnum, const Images::Image *images)
 {
     // make the box that the results will go into
     GFXStructs::Rect resultBox = {0, 0, constants::RESULT_PLACEMENT_WIDTH, constants::RESULT_PLACEMENT_HEIGHT};
     // set up grid data
-    GFXStructs::GridPlacementData placementData = calculateGridDataCentered(resultBox, sprite.width(), sprite.height(), _amountRolled, page);
+    GFXStructs::GridPlacementData placementData = _lcdServices.calculateGridDataCentered(resultBox, _lcdServices.getSpriteWidth(spriteEnum), _lcdServices.getSpriteHeight(spriteEnum), _amountRolled, page);
     // place dice
-    populateResultBoxCentered(page, _rolls.data(), _rolledDieTypeIndex.data(), resultBox, placementData, sprite, images);
+    _lcdServices.populateResultBoxCentered(page, _rolls.data(), _rolledDieTypeIndex.data(), resultBox, placementData, spriteEnum, images);
 }
-void RollModeGUI::centeredResultsOneDie(TFT_eSprite &sprite, const Images::Image *images)
-{
-    // make the box that the results will go into
-    GFXStructs::Rect resultBox = {0, 0, constants::RESULT_PLACEMENT_WIDTH, constants::RESULT_PLACEMENT_HEIGHT};
-    // set up grid data
-    GFXStructs::GridPlacementData placementData = calculateGridDataCentered(resultBox, sprite.width(), sprite.height(), 1, 0);
-    // place dice
-    populateResultBoxCentered(0, _rolls.data(), _rolledDieTypeIndex.data(), resultBox, placementData, sprite, images);
-}
-GFXStructs::RowPlacementData RollModeGUI::calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index)
-{
-    // the last row will have fewer cells in it, if we have less than the max remaining on to put on the page, then we use that to see how many are in the row
-    // we take the first index of the row we are currently on to calculate hence the (index/maxcols)*maxcols which gets us exactly that
-    int cellsInRow = std::min(placementData.cellAmount - ((index / placementData.maxCellsInRow) * placementData.maxCellsInRow), placementData.maxCellsInRow);
-    // find how many pixels all of the cells themselves take up and subtract it by the
-    // total amount of pixels to find how many pixels of space we have remaining.
-    // there is one more gap than there is dice to place in the row since we
-    // are counting either side of the row as a gap because of how centering would look
-    // meaning we divide the remaining pixels by the amount of gaps we need.
-    int xGap = (box.width - (cellsInRow * placementData.cellWidth)) / (cellsInRow + 1);
-    // find the amount of pixels we have remaining by multiplying the cell width + gap by the amount of
-    // cells in the row then adding one more gap since there is one more gap than cells. divide that
-    // by two to find how many of those remaining pixels go on the left side. lastly add a xgap to the
-    // result so we don't have to do it in the walk.
-    int paddingLeft = ((box.width - (((placementData.cellWidth + xGap) * cellsInRow) + xGap)) / 2) + xGap;
 
-    return {cellsInRow, xGap, paddingLeft};
-}
-GFXStructs::GridPlacementData RollModeGUI::calculateGridDataCentered(GFXStructs::Rect box, int cellWidth, int cellHeight, int amountRolled, int page)
-{
-    int maxCellsPerRow = box.width / cellWidth;
-    int maxCellsPerCol = box.height / cellHeight;
-    int maxCellsOnPage = maxCellsPerCol * maxCellsPerRow;
 
-    // the total amnt of rolls - the starting point of where we begin writting said dice gives the amount of dice past that point (jeez im bad at explaining)
-    // but we can have no more than the max on the page so we take the min between those.
-    // but if we try to reach a page starting beyond the amount we rolled then we will have a negative cell amount so we keep the minimum to zero to avoid that
-    int cellAmount = std::max(std::min(amountRolled - (page * maxCellsOnPage), maxCellsOnPage), 0);
-    // total divided by rows rounding up since we will always have one col unless there are 0 dice on screen
-    int cellsInCol = Functions::divideRoundUp(cellAmount, maxCellsPerRow);
-
-    // divide the amount of pixels remaining after counting the ones used from cells. divide that by the amount of gaps we need
-    int yGap = (box.height - (cellsInCol * cellHeight)) / (cellsInCol + 1);
-    // find the amount of pixels we have remaining by multiplying the cell width + gap by the amount of
-    // cells in the row then adding one more gap since there is one more gap than cells. divide that
-    // by two to find how many of those remaining pixels go on the top side. lastly add a ygap to the
-    // result so we don't have to do it in the walk.
-    int paddingTop = ((box.height - (((cellHeight + yGap) * cellsInCol) + yGap)) / 2) + yGap;
-
-    return {cellWidth, cellHeight, maxCellsPerRow, maxCellsPerCol, maxCellsOnPage, cellsInCol, cellAmount, yGap, paddingTop};
-}
-void RollModeGUI::populateResultBoxCentered(int page, uint8_t *rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite &sprite, const Images::Image *images)
-{
-    // create buffer for writing to sprite
-    char buffer[6];
-    // set the offset for accessing the dice from array
-    int indexOffset = page * (placementData.maxCells);
-    // instantiate row placement data struct so we dont realocate memory every single time
-    GFXStructs::RowPlacementData rowPlacemendData;
-    for (int i = 0; i < placementData.cellAmount; i++)
-    {
-        // calculate number of die in row, padding,  and xgap needed by calling this function
-        rowPlacemendData = calculateRowDataCentered(box, placementData, i);
-        // add a base of the box x pos and padding left. shift over by the amount of dice on current row at index * dice width and gap between dice
-        int x = ((placementData.cellWidth + rowPlacemendData.cellGap) * (i % placementData.maxCellsInRow)) + box.x + rowPlacemendData.paddingLeft;
-        // pretty much the same as x
-        int y = ((placementData.cellHeight + placementData.yGap) * (i / placementData.maxCellsInRow)) + box.y + placementData.paddingTop;
-
-        // print on those lil dice
-        snprintf(buffer, 6, "%u", rolls[i + indexOffset]);
-        pushDiceSprite(sprite, x, y, images[rollImageIndex[i + indexOffset]], buffer);
-    }
-}
 
 // TOOOOOD padding top is not working...
 // void RollModeGUI::populateResultBox(int page, int resultBoxX, int resultBoxY, int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, const uint16_t* const* imageWidths, const uint16_t* const* imageHeights, const uint16_t* const* images, int colGapSize, int rowGapSize)
@@ -546,41 +424,34 @@ void RollModeGUI::drawResultBackground()
     
 }
 
-void RollModeGUI::pushDiceSprite(TFT_eSprite &sprite, int32_t x, int32_t y, Images::Image image)
+// TOOOOOOD MAKE THIS DYNAMIC HOLY DONT HAVE TIME NOW LOOOOL
+void RollModeGUI::modifyTotal()
 {
-    // reset sprite
-    sprite.fillSprite(TFT_BLACK);
-    // center the image on the sprite
-    sprite.pushImage(
-        // caluculate where the image must be placed on the sprite so it is centered
-        (sprite.width() - image.width) / 2,
-        (sprite.height() - image.height) / 2,
-        image.width,
-        image.height,
-        image.data);
-    // push sprite to screen at x and y (from sprites top left corner)
-    sprite.pushSprite(
-        // place
-        x,
-        y);
+    _tft.fillRect(0, 211, 330, 29, TFT_BLACK);
+    char buffer[30];
+    _tft.setTextFont(1);
+    _tft.setTextSize(2);
+    _tft.setTextColor(TFT_WHITE);
+    if (_amountOfPages > 1)
+    {
+        _tft.setTextDatum(BL_DATUM);
+        _tft.setCursor(0, constants::SCREEN_HEIGHT);
+        snprintf(buffer, 25, "%d/%u", _currentResultPage + 1, _amountOfPages);
+        _tft.drawString(buffer, 0, constants::SCREEN_HEIGHT - 3);
+    }
+    _tft.setTextDatum(BR_DATUM);
+    if (_modifier != 0)
+        snprintf(buffer, 30, "Total: %d (mod: %d)", _result + _modifier, _modifier);
+    else
+        snprintf(buffer, 30, "Total: %d", _result);
+    _tft.drawString(buffer, constants::SCREEN_WIDTH, constants::SCREEN_HEIGHT - 3);
 }
-void RollModeGUI::pushDiceSprite(TFT_eSprite &sprite, int32_t x, int32_t y, Images::Image image, char printValue[])
+void RollModeGUI::eraseBottomDice()
 {
-    // reset sprite
-    sprite.fillSprite(TFT_BLACK);
-    // center the image on the sprite
-    sprite.pushImage(
-        // caluculate where the image must be placed on the sprite so it is centered
-        (sprite.width() - image.width) / 2,
-        (sprite.height() - image.height) / 2,
-        image.width,
-        image.height,
-        image.data);
-    sprite.drawString(printValue, sprite.width() / 2 + 1, sprite.height() / 2);
-    // push sprite to screen at x and y (from sprites top left corner)
-    sprite.pushSprite(
-        // place
-        x,
-        y);
+    _tft.fillRect(
+        constants::FIRST_LIL_DIE_X,
+        constants::FIRST_LIL_DIE_Y,
+        constants::SCREEN_WIDTH, // screen width
+        Images::lilDieSpriteHeight,
+        TFT_BLACK);
 }
-

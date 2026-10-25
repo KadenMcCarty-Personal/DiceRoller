@@ -3,23 +3,41 @@
 
 LCDServices::LCDServices(TFT_eSPI &tft) : _tft(tft), _bigDice(&tft), _medDice(&tft), _lilDice(&tft)
 {
+    // init the sprites
+    _bigDice.createSprite(Images::bigDieSpriteWidth, Images::bigDieSpriteHeight);
+    _bigDice.setTextSize(3);
+    _bigDice.setTextColor(TFT_WHITE);
+    _bigDice.setTextFont(1);
+    _bigDice.setTextDatum(CC_DATUM);
+    
+    _medDice.createSprite(Images::medDieSpriteWidth, Images::medDieSpriteHeight);
+    _medDice.setTextSize(2);
+    _medDice.setTextColor(TFT_WHITE);
+    _medDice.setTextFont(1);
+    _medDice.setTextDatum(CC_DATUM);
+
+    _lilDice.createSprite(Images::lilDieSpriteWidth, Images::lilDieSpriteHeight);
+    _lilDice.setTextSize(1);
+    _lilDice.setTextColor(TFT_WHITE);
+    _lilDice.setTextFont(2);
+    _lilDice.setTextDatum(CC_DATUM);
 }
 
 GFXStructs::RowPlacementData LCDServices::calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index)
 {
     // the last row will have fewer cells in it, if we have less than the max remaining on to put on the page, then we use that to see how many are in the row
     // we take the first index of the row we are currently on to calculate hence the (index/maxcols)*maxcols which gets us exactly that
-    int cellsInRow = std::min(placementData.cellAmount - ((index / placementData.maxCellsInRow) * placementData.maxCellsInRow), placementData.maxCellsInRow);
     // find how many pixels all of the cells themselves take up and subtract it by the
     // total amount of pixels to find how many pixels of space we have remaining.
     // there is one more gap than there is dice to place in the row since we
     // are counting either side of the row as a gap because of how centering would look
     // meaning we divide the remaining pixels by the amount of gaps we need.
-    int xGap = (box.width - (cellsInRow * placementData.cellWidth)) / (cellsInRow + 1);
     // find the amount of pixels we have remaining by multiplying the cell width + gap by the amount of
     // cells in the row then adding one more gap since there is one more gap than cells. divide that
     // by two to find how many of those remaining pixels go on the left side. lastly add a xgap to the
     // result so we don't have to do it in the walk.
+    int cellsInRow = std::min(placementData.cellAmount - ((index / placementData.maxCellsInRow) * placementData.maxCellsInRow), placementData.maxCellsInRow);
+    int xGap = (box.width - (cellsInRow * placementData.cellWidth)) / (cellsInRow + 1);
     int paddingLeft = ((box.width - (((placementData.cellWidth + xGap) * cellsInRow) + xGap)) / 2) + xGap;
 
     return {cellsInRow, xGap, paddingLeft};
@@ -47,13 +65,12 @@ GFXStructs::GridPlacementData LCDServices::calculateGridDataCentered(GFXStructs:
 
     return {cellWidth, cellHeight, maxCellsPerRow, maxCellsPerCol, maxCellsOnPage, cellsInCol, cellAmount, yGap, paddingTop};
 }
-void LCDServices::populateResultBoxCentered(int page, uint8_t *rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite &sprite, const Images::Image *images)
+void LCDServices::populateResultBoxCentered(int page, uint8_t *rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites spriteEnum, const Images::Image *images)
 {
     // TESTING
     // _tft.fillRect(box.x, box.y, box.width, box.height, TFT_BLACK);
     // TESTING
     // _tft.drawRect(box.x, box.y, box.width, box.height, TFT_WHITE);
-
     // create buffer for writing to sprite
     char buffer[6];
     // set the offset for accessing the dice from array
@@ -71,6 +88,55 @@ void LCDServices::populateResultBoxCentered(int page, uint8_t *rolls, uint8_t *r
 
         // print on those lil dice
         snprintf(buffer, 6, "%u", rolls[i + indexOffset]);
-        pushDiceSprite(sprite, x, y, images[rollImageIndex[i + indexOffset]], buffer);
+        pushDiceSprite(spriteEnum, x, y, images[rollImageIndex[i + indexOffset]], buffer);
     }
+}
+
+void LCDServices::pushDiceSprite(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image)
+{
+    TFT_eSprite& sprite = *_sprites[static_cast<int>(spriteEnum)];
+    // reset sprite
+    sprite.fillSprite(TFT_BLACK);
+    // center the image on the sprite
+    sprite.pushImage(
+        // caluculate where the image must be placed on the sprite so it is centered
+        (sprite.width() - image.width) / 2,
+        (sprite.height() - image.height) / 2,
+        image.width,
+        image.height,
+        image.data);
+    // push sprite to screen at x and y (from sprites top left corner)
+    sprite.pushSprite(
+        // place
+        x,
+        y);
+}
+void LCDServices::pushDiceSprite(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image, char printValue[])
+{
+    TFT_eSprite& sprite = *_sprites[static_cast<int>(spriteEnum)];
+    // reset sprite
+    sprite.fillSprite(TFT_BLACK);
+    // center the image on the sprite
+    sprite.pushImage(
+        // caluculate where the image must be placed on the sprite so it is centered
+        (sprite.width() - image.width) / 2,
+        (sprite.height() - image.height) / 2,
+        image.width,
+        image.height,
+        image.data);
+    sprite.drawString(printValue, sprite.width() / 2 + 1, sprite.height() / 2);
+    // push sprite to screen at x and y (from sprites top left corner)
+    sprite.pushSprite(
+        // place
+        x,
+        y);
+}
+
+int LCDServices::getSpriteWidth(Sprites spriteEnum)
+{
+    return (*_sprites[static_cast<int>(spriteEnum)]).width();
+}
+int LCDServices::getSpriteHeight(Sprites spriteEnum)
+{
+    return (*_sprites[static_cast<int>(spriteEnum)]).height();
 }

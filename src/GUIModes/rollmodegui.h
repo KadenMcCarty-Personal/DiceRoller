@@ -7,11 +7,12 @@
 #include "../Data/images.h"
 #include "../Services/functions.h"
 #include "../Data/gfxstructs.h"
+#include "../PeripheralDA/lcdservices.h"
 
 class RollModeGUI
 {
     public:
-        explicit RollModeGUI(TFT_eSPI& tft, LCDInterface &lcdInterface);
+        explicit RollModeGUI(TFT_eSPI& tft, LCDServices& lcdServices);
         //function to call when switching to this mode. draws everything back to where it was when we left
         void enter();
         // function to call every loop, manges pretty much everything
@@ -42,21 +43,12 @@ class RollModeGUI
         int dynamicGapCalculation(int length, int spriteLength);
         
         
-        int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite);
-        int getPageAmount(int resultBoxWidth, int resultBoxHeight, TFT_eSprite& sprite, int colGapSize, int rowGapSize);
+        int getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum);
+        int getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum, int colGapSize, int rowGapSize);
         
-        void centeredResults(int page, TFT_eSprite& sprite, const Images::Image* images);
-        void centeredResultsOneDie(TFT_eSprite &sprite, const Images::Image *images);
+        void centeredResults(int page, LCDServices::Sprites spriteEnum, const Images::Image* images);
+        void centeredResultsOneDie(LCDServices::Sprites spriteEnum, const Images::Image *images);
 
-        GFXStructs::GridPlacementData calculateGridDataCentered(GFXStructs::Rect box, int cellWidth, int cellHeight, int amountRolled, int page);
-        GFXStructs::RowPlacementData calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index);
-        void populateResultBoxCentered(int page, uint8_t* rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, TFT_eSprite& sprite, const Images::Image* images);
-        
-
-        /// @brief Push a sprite to the screen with an image centered on it. 
-        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, Images::Image image);
-        /// @brief Push a sprite to the screen with an image centered on it. Includes a char array centered on sprite. 
-        void pushDiceSprite(TFT_eSprite& sprite, int32_t x, int32_t y, Images::Image image, char printValue[]);
 
         // Draws the background and static objects 
         void drawBackground();
@@ -71,12 +63,14 @@ class RollModeGUI
         //---variables---
 
         // gfx library
+        LCDServices& _lcdServices;
+
         TFT_eSPI& _tft;
 
-        // we will use sprites for the main roll mode navigation to avoid flickering
-        TFT_eSprite& _bigDice;
-        TFT_eSprite& _medDice;
-        TFT_eSprite& _lilDice;
+        // // we will use sprites for the main roll mode navigation to avoid flickering
+        // TFT_eSprite& _bigDice;
+        // TFT_eSprite& _medDice;
+        // TFT_eSprite& _lilDice;
 
         // navigation through this page
         uint8_t _navigation;

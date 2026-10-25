@@ -22,7 +22,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 LCDServices lcdServices(tft);
 // init gui service objects
-RollModeGUI rollMode(tft);
+RollModeGUI rollMode(tft, lcdServices);
 SaveModeGUI saveMode(tft);
 AttackModeGUI attackMode(tft);
 
