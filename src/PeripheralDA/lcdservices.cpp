@@ -132,6 +132,24 @@ void LCDServices::pushDiceSprite(Sprites spriteEnum, int32_t x, int32_t y, Image
         y);
 }
 
+void LCDServices::drawBackground()
+{
+    // SUBJECT TO CHANGE, FIRST ITERATION FOR TESTING AND STUFF
+    _tft.fillScreen(TFT_BLACK);
+    _tft.pushImage(6, 13, 302, 225, Images::image_paint_204_pixels);
+    // ellipse 1
+    // _tft.drawEllipse(330, 2, 59, 55, 0xFFFF);
+
+    // ellipse 1
+    _tft.drawEllipse(326, 0, 45, 45, 0x2104);
+    // ellipse 1
+    _tft.drawEllipse(310, 13, 55, 55, 0x2104);
+    // ellipse 1
+    // _tft.drawEllipse(343, -13, 59, 55, 0xFFFF);
+    // ButtonLeftSmall
+
+}
+
 int LCDServices::getSpriteWidth(Sprites spriteEnum)
 {
     return (*_sprites[static_cast<int>(spriteEnum)]).width();

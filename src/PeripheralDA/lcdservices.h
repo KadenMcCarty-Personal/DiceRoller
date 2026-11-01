@@ -30,8 +30,11 @@ class LCDServices
         GFXStructs::RowPlacementData calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index);
         int getSpriteWidth(Sprites spriteEnum);
         int getSpriteHeight(Sprites spriteEnum);
+
+        void drawBackground();
+
         private:
-        TFT_eSPI _tft;
+        TFT_eSPI& _tft;
         
         // we will use sprites for the main roll mode navigation to avoid flickering
         TFT_eSprite _bigDice;

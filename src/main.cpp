@@ -8,6 +8,7 @@
 #include "GUIModes/attackmodegui.h"
 #include "Data/pins.h"
 #include "Data/images.h"
+// TOOD MAKE TRANSPARENT COLOR FOR MEGAD20 AND OTHERS PROLLY
 
 //create button objects
 Button buttonLeft(Pins::kButtonLeft);
@@ -23,12 +24,10 @@ TFT_eSPI tft = TFT_eSPI();
 LCDServices lcdServices(tft);
 // init gui service objects
 RollModeGUI rollMode(tft, lcdServices);
-SaveModeGUI saveMode(tft);
+SaveModeGUI saveMode(tft, lcdServices);
 AttackModeGUI attackMode(tft);
 
-// total number of elements in the enum MUST UPDATE WHEN ADDING MORE. doing this so it does not
-// have to be calculated every time mode is called or calculated at all
-int8_t modeAmount = 3;
+
 // enum for modes
 enum class Mode {
   ROLL, 
@@ -90,14 +89,14 @@ void loop() {
   
 }
 // wip
-void cycleMode(bool isReady)
+void cycleMode(bool switchMode)
 {
   //check if button has been pressed
-  if (isReady)
+  if (switchMode)
   {
     // add to the cycle
-    modeCycleInt++; 
-    mode = static_cast<Mode>(modeAmount%modeCycleInt);
+    modeCycleInt = Functions::wrapAround(modeCycleInt + 1, 0, 2); 
+    mode = static_cast<Mode>(modeCycleInt);
     // depending on the mode, call the correct enter fun
     switch (mode){
       case Mode::ROLL:

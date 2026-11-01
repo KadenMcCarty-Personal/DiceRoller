@@ -52,18 +52,14 @@ _lcdServices(lcdServices)
     _amountRolled = 0;
     _amountSelected = 0;
     _rolls = {};
+    _screen = Screen::SELECT;
 }
 
-enum class Screen
-{
-    SELECT,
-    RESULTS
-};
-Screen screen = Screen::SELECT;
+
 
 void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed)
 {
-    switch (screen)
+    switch (_screen)
     {
     case Screen::SELECT:
     {
@@ -97,7 +93,7 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
         // lastly, check if the roll button has been pressed
         if (rollPressed)
         {
-            screen = Screen::RESULTS;
+            _screen = Screen::RESULTS;
             _currentResultPage = 0;
 
             //  if nothing selected, just add the current die we are on to selection and roll, then remove it from selection once rolled. 
@@ -139,7 +135,7 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
         // lastly, check if the roll button has been pressed we switch back to selection screen
         if (rollPressed)
         {
-            screen = Screen::SELECT;
+            _screen = Screen::SELECT;
             enter();
         }
         break;
@@ -148,7 +144,7 @@ void RollModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed, b
 }
 void RollModeGUI::enter()
 {
-    switch (screen)
+    switch (_screen)
     {
     case Screen::SELECT:
         drawBackground();
@@ -390,6 +386,7 @@ void RollModeGUI::centeredResults(int page, LCDServices::Sprites spriteEnum, con
 // ===================================================================
 // helper functions for interacting with tft
 // ===================================================================
+// TESTING MUST USE LCDSERVICES ONE FOR THIS
 void RollModeGUI::drawBackground()
 {
     // SUBJECT TO CHANGE, FIRST ITERATION FOR TESTING AND STUFF

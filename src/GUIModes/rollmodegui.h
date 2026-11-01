@@ -18,7 +18,12 @@ class RollModeGUI
         // function to call every loop, manges pretty much everything
         void update(bool leftPressed, bool rightPressed, bool addPressed, bool subtractPressed, bool rollPressed);
     private: 
-
+        enum class Screen
+        {
+            SELECT,
+            RESULTS
+        };
+        Screen _screen;
         //this just sets backend arrays 'n stuff like _rolls
         void rollSelected();
         void resetRolls();
