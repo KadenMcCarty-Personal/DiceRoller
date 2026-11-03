@@ -278,7 +278,7 @@ void RollModeGUI::pushResults()
             0);
         centeredResults(_currentResultPage, LCDServices::Sprites::LILDICE, Images::lilDice);
     }
-    // maybe not this in future
+    // maybe not this in future sooooooo keyword!!!! TESTING
     modifyTotal();
 }
 

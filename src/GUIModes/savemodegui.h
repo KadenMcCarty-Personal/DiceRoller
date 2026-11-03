@@ -26,14 +26,20 @@ class SaveModeGUI
         void drawNonStaticItems();
         void drawNav(uint32_t color);
         void drawValueAtIndex(int i);
+        void roll();
+        void resetRolls();
+        void pushRolls();
+        int getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum, int colGapSize, int rowGapSize);
+        void centeredResults(int page, LCDServices::Sprites spriteEnum, const Images::Image *images);
+        void drawResults();
 
         static constexpr size_t MAX_ROLL = 99;
         TFT_eSPI& _tft;
         LCDServices& _lcdServices;
         uint8_t _navigation;
 
-        std::array<uint8_t, MAX_ROLL> _rolls;
-        std::array<uint8_t, MAX_ROLL> _rollsPassFailIndex;
+        std::array<int8_t, MAX_ROLL> _rolls;
+        std::array<int8_t, MAX_ROLL> _rollsPassFailIndex;
         
         int _modifier;
         int _difficulty;

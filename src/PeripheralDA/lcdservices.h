@@ -25,6 +25,7 @@ class LCDServices
 
 
         void populateResultBoxCentered(int page, uint8_t* rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites sprite, const Images::Image* images);
+        void populateResultBoxCenteredColorText(int page, int8_t* rolls, int8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites sprite, const Images::Image* images);
         
         GFXStructs::GridPlacementData calculateGridDataCentered(GFXStructs::Rect box, int cellWidth, int cellHeight, int amountRolled, int page);
         GFXStructs::RowPlacementData calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index);
