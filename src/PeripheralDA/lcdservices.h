@@ -22,6 +22,8 @@ class LCDServices
         void pushDiceSprite(Sprites sprite, int32_t x, int32_t y, Images::Image image);
         /// @brief Push a sprite to the screen with an image centered on it. Includes a char array centered on sprite. 
         void pushDiceSprite(Sprites sprite, int32_t x, int32_t y, Images::Image image, char printValue[]);
+        void pushDiceSpriteCentered(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image, char printValue[]);
+
 
 
         void populateResultBoxCentered(int page, uint8_t* rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites sprite, const Images::Image* images);

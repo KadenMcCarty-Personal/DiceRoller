@@ -172,6 +172,26 @@ void LCDServices::pushDiceSprite(Sprites spriteEnum, int32_t x, int32_t y, Image
         x,
         y);
 }
+void LCDServices::pushDiceSpriteCentered(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image, char printValue[])
+{
+    TFT_eSprite& sprite = *_sprites[static_cast<int>(spriteEnum)];
+    // reset sprite
+    sprite.fillSprite(TFT_BLACK);
+    // center the image on the sprite
+    sprite.pushImage(
+        // caluculate where the image must be placed on the sprite so it is centered
+        (sprite.width() - image.width) / 2,
+        (sprite.height() - image.height) / 2,
+        image.width,
+        image.height,
+        image.data);
+    sprite.drawString(printValue, sprite.width() / 2 + 1, sprite.height() / 2);
+    // push sprite to screen at x and y (from sprites top left corner)
+    sprite.pushSprite(
+        // place
+        x - (sprite.width() / 2),
+        y - (sprite.height() / 2));
+}
 
 void LCDServices::drawBackground()
 {

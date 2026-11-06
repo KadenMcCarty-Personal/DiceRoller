@@ -62,6 +62,8 @@ namespace constants
 
 SaveModeGUI::SaveModeGUI(TFT_eSPI& tft, LCDServices &lcdServices) : _tft(tft), _lcdServices(lcdServices)
 {
+    _navigation = 0;
+
     _modifier = 0;
     _difficulty = 0;
     _adv = 0;

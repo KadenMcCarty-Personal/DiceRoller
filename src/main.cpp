@@ -25,7 +25,7 @@ LCDServices lcdServices(tft);
 // init gui service objects
 RollModeGUI rollMode(tft, lcdServices);
 SaveModeGUI saveMode(tft, lcdServices);
-AttackModeGUI attackMode(tft);
+AttackModeGUI attackMode(tft, lcdServices);
 
 
 // enum for modes
