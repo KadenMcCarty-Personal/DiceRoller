@@ -21,7 +21,11 @@ class AttackModeGUI
             D6, 
             D4,
             DMG_MOD,
-            ATK_AMOUNT
+            ATK_AMOUNT,
+            S1,
+            S2,
+            S3,
+            S4
         };
 
     private: 
@@ -34,7 +38,8 @@ class AttackModeGUI
         void centeredResults(int page, LCDServices::Sprites spriteEnum, const Images::Image *images);
         int getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum, int colGapSize, int rowGapSize);
 
-
+        void savePageState(int slotIndex);
+        void loadPageState(int slotIndex);
 
         void drawStaticItems();
         void drawNonStaticItems();
@@ -71,8 +76,12 @@ class AttackModeGUI
         std::array<int, NUM_DICE_TYPES> _dieAmounts;
         int _dmgMod;
         int _atkAmount;
+        std::array<int, 4> _loadedSaves;
 
-        int* _selectValue[10] = {
+        struct SaveState {int atkMod, ac, adv; std::array<int, NUM_DICE_TYPES> dieAmounts; int dmgMod, atkAmount;};
+        SaveState _saveStates[4];
+
+        int* _selectValue[14] = {
             &_atkMod, 
             &_ac, 
             &_adv, 
@@ -82,7 +91,11 @@ class AttackModeGUI
             &_dieAmounts[3],
             &_dieAmounts[4],
             &_dmgMod,
-            &_atkAmount
+            &_atkAmount,
+            &_loadedSaves[0],
+            &_loadedSaves[1],
+            &_loadedSaves[2],
+            &_loadedSaves[3]
         };
 
         // total number of pages that can be displayed

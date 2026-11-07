@@ -3,7 +3,7 @@
 namespace constants
 {
     // the max number that the nav variable can be before looping back to 0
-    constexpr uint8_t MAX_NAV = 9;
+    constexpr uint8_t MAX_NAV = 13;
 
     struct ValueMinMax {int min, max;};
 
@@ -68,6 +68,29 @@ namespace constants
         {271, 183, 319, 183},
         {278, 156, 34, 14, TFT_WHITE, 295, 164, TFT_BLACK, 2, 1} 
     };
+    constexpr ValueData S1_DATA { 
+        AttackModeGUI::Field::S1,
+        {0, 1},
+        {93, 209, 111, 209},
+        {100, 231, 5, 5, TFT_WHITE, 102, 233, TFT_BLACK, 1, 1} 
+    };
+    constexpr ValueData S2_DATA { 
+        AttackModeGUI::Field::S2,
+        {0, 1},
+        {132, 209, 150, 209},
+        {139, 231, 5, 5, TFT_WHITE, 141, 233, TFT_BLACK, 1, 1} 
+    };
+    constexpr ValueData S3_DATA { 
+        AttackModeGUI::Field::S3,
+        {0, 1},
+        {169, 209, 187, 209},
+        {176, 231, 5, 5, TFT_WHITE, 178, 233, TFT_BLACK, 1, 1} 
+    };constexpr ValueData S4_DATA { 
+        AttackModeGUI::Field::S4,
+        {0, 1},
+        {208, 209, 226, 209},
+        {215, 231, 5, 5, TFT_WHITE, 217, 233, TFT_BLACK, 1, 1} 
+    };
     constexpr ValueData const* SELECT_DATA[] = {
         &ATK_MOD_DATA,
         &AC_DATA,
@@ -78,7 +101,11 @@ namespace constants
         &D6_DATA,
         &D4_DATA,
         &DMG_MOD_DATA,
-        &ATK_AMOUNT_DATA
+        &ATK_AMOUNT_DATA,
+        &S1_DATA,
+        &S2_DATA,
+        &S3_DATA,
+        &S4_DATA
     };
 
     constexpr uint16_t RESULT_PLACEMENT_X = 0;
@@ -104,6 +131,7 @@ AttackModeGUI::AttackModeGUI(TFT_eSPI& tft, LCDServices& lcdServices) : _tft(tft
     _adv = 0;
     _dmgMod = 0;
     _atkAmount = 1;
+    _loadedSaves = {};
 
     _screen = Screen::SELECT;
 }
@@ -140,8 +168,28 @@ void AttackModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed,
         if (addDelta != 0)
         {
             // use select data struct to see what value is being changed and their min/max
-            *_selectValue[_navigation] = constrain(*_selectValue[_navigation] + addDelta, constants::SELECT_DATA[_navigation]->valueMinMax.min, constants::SELECT_DATA[_navigation]->valueMinMax.max);
-            drawValueAtIndex(_navigation);
+            switch(constants::SELECT_DATA[_navigation]->valueField) {
+                case AttackModeGUI::Field::S1:
+                case AttackModeGUI::Field::S2:
+                case AttackModeGUI::Field::S3:
+                case AttackModeGUI::Field::S4:
+
+                if(*_selectValue[_navigation] == 1 && addDelta == 1)
+                {
+                    loadPageState(_navigation - static_cast<int>(AttackModeGUI::Field::S1));
+                    *_selectValue[_navigation] = constrain(*_selectValue[_navigation] + addDelta, constants::SELECT_DATA[_navigation]->valueMinMax.min, constants::SELECT_DATA[_navigation]->valueMinMax.max);
+                    enter();
+                }
+                else if(*_selectValue[_navigation] == 0 && addDelta == 1)
+                    savePageState(_navigation - static_cast<int>(AttackModeGUI::Field::S1));
+                    *_selectValue[_navigation] = constrain(*_selectValue[_navigation] + addDelta, constants::SELECT_DATA[_navigation]->valueMinMax.min, constants::SELECT_DATA[_navigation]->valueMinMax.max);
+                    drawValueAtIndex(_navigation);
+                break;
+            default:
+                *_selectValue[_navigation] = constrain(*_selectValue[_navigation] + addDelta, constants::SELECT_DATA[_navigation]->valueMinMax.min, constants::SELECT_DATA[_navigation]->valueMinMax.max);
+                drawValueAtIndex(_navigation);
+                break;
+            }
         }
 
         // lastly, check if the roll button has been pressed
@@ -305,6 +353,25 @@ int AttackModeGUI::getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDSer
     return (_atkAmount + temp - 1) / temp;
 }
 
+void AttackModeGUI::savePageState(int slotIndex)
+{
+    _saveStates[slotIndex].atkMod = _atkMod;
+    _saveStates[slotIndex].ac = _ac;
+    _saveStates[slotIndex].adv = _adv;
+    _saveStates[slotIndex].dieAmounts = _dieAmounts;
+    _saveStates[slotIndex].dmgMod = _dmgMod;
+    _saveStates[slotIndex].atkAmount = _atkAmount;
+}
+void AttackModeGUI::loadPageState(int slotIndex)
+{
+    _atkMod = _saveStates[slotIndex].atkMod;
+    _ac = _saveStates[slotIndex].ac;
+    _adv = _saveStates[slotIndex].adv;
+    _dieAmounts = _saveStates[slotIndex].dieAmounts;
+    _dmgMod = _saveStates[slotIndex].dmgMod;
+    _atkAmount = _saveStates[slotIndex].atkAmount;
+}
+
 void AttackModeGUI::drawStaticItems()
 { 
     // ellipse 91
@@ -440,7 +507,33 @@ void AttackModeGUI::drawValueAtIndex(int i)
             );
             drawNav(TFT_WHITE);
             break;
-            
+        case AttackModeGUI::Field::S1:
+        case AttackModeGUI::Field::S2:
+        case AttackModeGUI::Field::S3:
+        case AttackModeGUI::Field::S4:
+            // erase the previous number
+            _tft.fillRect(
+                constants::SELECT_DATA[i]->valueGFX.eraseX, 
+                constants::SELECT_DATA[i]->valueGFX.eraseY, 
+                constants::SELECT_DATA[i]->valueGFX.eraseWidth,
+                constants::SELECT_DATA[i]->valueGFX.eraseHeight,
+                constants::SELECT_DATA[i]->valueGFX.eraseColor
+            );
+            if(*_selectValue[i] != 0)
+            {
+                //set up text settings
+                _tft.setTextColor(constants::SELECT_DATA[i]->valueGFX.valueColor);
+                _tft.setTextDatum(CC_DATUM);
+                _tft.setTextSize(constants::SELECT_DATA[i]->valueGFX.valueSize);
+                _tft.setTextFont(constants::SELECT_DATA[i]->valueGFX.valueFont);
+                // everything else just draws the number
+                _tft.drawString(
+                    "+", 
+                    constants::SELECT_DATA[i]->valueGFX.valueCenterX, 
+                    constants::SELECT_DATA[i]->valueGFX.valueCenterY
+                );
+            }
+            break;
         default:
             // erase the previous number
             _tft.fillRect(
