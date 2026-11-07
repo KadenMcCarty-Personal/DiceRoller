@@ -217,12 +217,12 @@ void SaveModeGUI::roll()
         }
         // TESTING 0 = crit fail, 1 = fail, 2 = successs, 3 = nat 20
         _rollsPassFailIndex[i] = (_rolls[i] - _modifier == 1 ? 0 : _rolls[i] - _modifier == 20 ? 3 : _rolls[i] < _difficulty ? 1 : _rolls[i] >= _difficulty ? 2 : -1);
-        Serial.printf("roll: %d pf:%d\n", _rolls[i] - _modifier, _rollsPassFailIndex[i]);
     }
 }
 void SaveModeGUI::resetRolls()
 {
     std::fill_n(_rolls.begin(), MAX_ROLL, 0);
+    std::fill_n(_rollsPassFailIndex.begin(), MAX_ROLL, 0);
 }
 
 void SaveModeGUI::pushRolls()

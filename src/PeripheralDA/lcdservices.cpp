@@ -132,6 +132,49 @@ void LCDServices::populateResultBoxCenteredColorText(int page, int8_t *rolls, in
     }
     _sprites[static_cast<int>(spriteEnum)]->setTextColor(TFT_WHITE);
 }
+// TESTING COULD BE DONE BETTER
+void LCDServices::populateResultBoxCenteredColorText(int page, int *rolls, int *dmgRolls, int8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites spriteEnum, const Images::Image *images)
+{
+    // TESTING
+    // _tft.fillRect(box.x, box.y, box.width, box.height, TFT_BLACK);
+    // TESTING
+    // _tft.drawRect(box.x, box.y, box.width, box.height, TFT_WHITE);
+    // create buffer for writing to sprite
+    char buffer1[6];
+    char buffer2[6];
+    // set the offset for accessing the dice from array
+    int indexOffset = page * (placementData.maxCells);
+    // instantiate row placement data struct so we dont realocate memory every single time
+    GFXStructs::RowPlacementData rowPlacemendData;
+    for (int i = 0; i < placementData.cellAmount; i++)
+    {
+        // calculate number of die in row, padding,  and xgap needed by calling this function
+        rowPlacemendData = calculateRowDataCentered(box, placementData, i);
+        // add a base of the box x pos and padding left. shift over by the amount of dice on current row at index * dice width and gap between dice
+        int x = ((placementData.cellWidth + rowPlacemendData.cellGap) * (i % placementData.maxCellsInRow)) + box.x + rowPlacemendData.paddingLeft;
+        // pretty much the same as x
+        int y = ((placementData.cellHeight + placementData.yGap) * (i / placementData.maxCellsInRow)) + box.y + placementData.paddingTop;
+
+        // print on those lil dice
+        switch(rollImageIndex[i + indexOffset])
+        {
+            case 0: 
+                _sprites[static_cast<int>(spriteEnum)]->setTextColor(TFT_PINK);
+                break;
+            case 3:
+                _sprites[static_cast<int>(spriteEnum)]->setTextColor(TFT_GOLD);
+                break;
+            default :
+                _sprites[static_cast<int>(spriteEnum)]->setTextColor(TFT_WHITE);
+                break;
+
+        }
+        snprintf(buffer1, 6, "%d", rolls[i + indexOffset]);
+        snprintf(buffer2, 6, "%d", dmgRolls[i + indexOffset]);
+        pushDiceSpriteTwoLines(spriteEnum, x, y, images[rollImageIndex[i + indexOffset]], buffer1, buffer2);
+    }
+    _sprites[static_cast<int>(spriteEnum)]->setTextColor(TFT_WHITE);
+}
 
 void LCDServices::pushDiceSprite(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image)
 {
@@ -166,6 +209,31 @@ void LCDServices::pushDiceSprite(Sprites spriteEnum, int32_t x, int32_t y, Image
         image.height,
         image.data);
     sprite.drawString(printValue, sprite.width() / 2 + 1, sprite.height() / 2);
+    // push sprite to screen at x and y (from sprites top left corner)
+    sprite.pushSprite(
+        // place
+        x,
+        y);
+}
+void LCDServices::pushDiceSpriteTwoLines(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image, char printValue1[], char printValue2[])
+{
+    TFT_eSprite& sprite = *_sprites[static_cast<int>(spriteEnum)];
+    // reset sprite
+    sprite.fillSprite(TFT_BLACK);
+    // center the image on the sprite
+    sprite.pushImage(
+        // caluculate where the image must be placed on the sprite so it is centered
+        (sprite.width() - image.width) / 2,
+        (sprite.height() - image.height) / 2,
+        image.width,
+        image.height,
+        image.data
+    );
+    sprite.setTextDatum(BC_DATUM);
+    sprite.drawString(printValue1, sprite.width() / 2 + 1, sprite.height() / 2);    
+    sprite.setTextDatum(TC_DATUM);
+    sprite.drawString(printValue2, sprite.width() / 2 + 1, sprite.height() / 2 + 1);
+    sprite.setTextDatum(CC_DATUM);
     // push sprite to screen at x and y (from sprites top left corner)
     sprite.pushSprite(
         // place

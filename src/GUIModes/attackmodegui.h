@@ -25,9 +25,19 @@ class AttackModeGUI
         };
 
     private: 
+
+        void roll();
+        void resetRolls();
+
+        void pushRolls();
+        void drawResults();
+        void centeredResults(int page, LCDServices::Sprites spriteEnum, const Images::Image *images);
+        int getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum, int colGapSize, int rowGapSize);
+
+
+
         void drawStaticItems();
         void drawNonStaticItems();
-
 
         void drawNav(uint32_t color);
         void drawValueAtIndex(int i);
@@ -48,16 +58,17 @@ class AttackModeGUI
 
         // ysed in conjunction with die amounts
         static constexpr std::array<uint8_t, NUM_DICE_TYPES> DIE_TYPES = {12, 10, 8, 6, 4};
-        std::array<int, NUM_DICE_TYPES> _dieAmounts;
-
+        
         std::array<int, MAX_ROLL> _atkRolls;
+        std::array<int8_t, MAX_ROLL> _hitMiss;
         std::array<int, MAX_ROLL> _dmg;
-
+        
         uint8_t _navigation;
-
+        
         int _atkMod;
         int _ac;
         int _adv;
+        std::array<int, NUM_DICE_TYPES> _dieAmounts;
         int _dmgMod;
         int _atkAmount;
 
@@ -73,4 +84,8 @@ class AttackModeGUI
             &_dmgMod,
             &_atkAmount
         };
+
+        // total number of pages that can be displayed
+        uint16_t _amountOfPages;
+        uint16_t _currentResultPage;
 };

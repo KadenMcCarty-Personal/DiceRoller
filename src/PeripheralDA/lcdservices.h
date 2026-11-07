@@ -23,12 +23,15 @@ class LCDServices
         /// @brief Push a sprite to the screen with an image centered on it. Includes a char array centered on sprite. 
         void pushDiceSprite(Sprites sprite, int32_t x, int32_t y, Images::Image image, char printValue[]);
         void pushDiceSpriteCentered(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image, char printValue[]);
+        void pushDiceSpriteTwoLines(Sprites spriteEnum, int32_t x, int32_t y, Images::Image image, char printValue1[], char printValue2[]);
 
 
 
         void populateResultBoxCentered(int page, uint8_t* rolls, uint8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites sprite, const Images::Image* images);
         void populateResultBoxCenteredColorText(int page, int8_t* rolls, int8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites sprite, const Images::Image* images);
-        
+        void populateResultBoxCenteredColorText(int page, int *rolls, int *dmgRolls, int8_t *rollImageIndex, GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, Sprites spriteEnum, const Images::Image *images);
+
+
         GFXStructs::GridPlacementData calculateGridDataCentered(GFXStructs::Rect box, int cellWidth, int cellHeight, int amountRolled, int page);
         GFXStructs::RowPlacementData calculateRowDataCentered(GFXStructs::Rect box, GFXStructs::GridPlacementData placementData, int index);
         int getSpriteWidth(Sprites spriteEnum);

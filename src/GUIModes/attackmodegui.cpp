@@ -24,7 +24,7 @@ namespace constants
         AttackModeGUI::Field::ADV,
         {-1, 1},
         {0, 212, 51, 212},
-        {4, 178, 46, 14, TFT_WHITE, 26, 186, TFT_BLACK, 2, 1} 
+        {2, 178, 46, 14, TFT_WHITE, 26, 186, TFT_BLACK, 2, 1} 
     };
     constexpr ValueData D12_DATA { 
         AttackModeGUI::Field::D12,
@@ -64,7 +64,7 @@ namespace constants
     };
     constexpr ValueData ATK_AMOUNT_DATA { 
         AttackModeGUI::Field::ATK_AMOUNT,
-        {0, 99},
+        {1, 99},
         {271, 183, 319, 183},
         {278, 156, 34, 14, TFT_WHITE, 295, 164, TFT_BLACK, 2, 1} 
     };
@@ -96,13 +96,14 @@ AttackModeGUI::AttackModeGUI(TFT_eSPI& tft, LCDServices& lcdServices) : _tft(tft
 
     _dieAmounts = {};
     _atkRolls = {};
+    _hitMiss = {};
     _dmg = {};
 
     _atkMod = 0;
     _ac = 0;
     _adv = 0;
     _dmgMod = 0;
-    _atkAmount = 0;
+    _atkAmount = 1;
 
     _screen = Screen::SELECT;
 }
@@ -116,8 +117,8 @@ void AttackModeGUI::enter()
         drawNonStaticItems();
         break;
     case Screen::RESULTS:
-        // _lcdServices.drawBackground();
-        // pushRolls();
+        _lcdServices.drawBackground();
+        pushRolls();
         break;
     }
 }
@@ -146,61 +147,166 @@ void AttackModeGUI::update(bool leftPressed, bool rightPressed, bool addPressed,
         // lastly, check if the roll button has been pressed
         if (rollPressed)
         {
-            // _screen = Screen::RESULTS;
-            // _currentResultPage = 0;
-
-            // //  if nothing selected, just add the current die we are on to selection and roll, then remove it from selection once rolled. 
-            // if (_amountSelected == 0)
-            // {
-            //     _amountSelected++;
-            //     _dieAmounts[_navigation]++;
-            //     rollSelected();
-            //     _amountSelected--;
-            //     _dieAmounts[_navigation]--;
-            // }
-            // else
-            //     rollSelected();
-            // enter();
+            _screen = Screen::RESULTS;
+            _currentResultPage = 0;
+            roll();
+            enter();
         }
         break;
     }
     case Screen::RESULTS:
     {
-        // // if left or right is pressed while in result page we cycle through pages
-        // int pageDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
-        // // only change pages if the page actually would change
-        // if (pageDelta != 0 && _amountOfPages > 1 && _currentResultPage != constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1))
-        // {
-        //     _currentResultPage = constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1);
-        //     // after we change which page is selected, update the screen
-        //     drawResultBackground();
-        //     pushResults();
-        // }
-
-        // int addDelta = (subtractPressed ? -1 : 0) + (addPressed ? 1 : 0);
-        // if (addDelta != 0)
-        // {
-        //     _modifier += addDelta;
-        //     // TOOD I WANNA DO THIS NOW BUT DONT
-        //     modifyTotal();
-        // }
-
-        // // lastly, check if the roll button has been pressed we switch back to selection screen
-        // if (rollPressed)
-        // {
-        //     _screen = Screen::SELECT;
-        //     enter();
-        // }
-        // break;
+        // if left or right is pressed while in result page we cycle through pages
+        int pageDelta = (leftPressed ? -1 : 0) + (rightPressed ? 1 : 0);
+        // only change pages if the page actually would change
+        if (pageDelta != 0 && _amountOfPages > 1 && _currentResultPage != constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1))
+        {
+            _currentResultPage = constrain(_currentResultPage + pageDelta, 0, _amountOfPages - 1);
+            // after we change which page is selected, update the screen
+            _lcdServices.drawBackground();
+            pushRolls();
+        }
+        // lastly, check if the roll button has been pressed we switch back to selection screen
+        if (rollPressed)
+        {
+            _screen = Screen::SELECT;
+            enter();
+        }
+        break;
     }
     }
 }
+
+void AttackModeGUI::roll()
+{
+    resetRolls();
+    for (int i = 0; i < _atkAmount; i ++)
+    {
+        switch (_adv) {
+            case -1 :
+            _atkRolls[i] = std::min(random(1, 21), random(1, 21)) + _atkMod;
+            break;
+
+            case 0 : 
+            _atkRolls[i] = random(1, 21) + _atkMod;
+            break;
+
+            case 1 :
+            _atkRolls[i] = std::max(random(1, 21), random(1, 21)) + _atkMod;
+            break;
+
+            default:
+            _atkRolls[i] = 0;
+            break;
+        }
+        // TESTING 0 = crit fail, 1 = fail, 2 = successs, 3 = nat 20
+        _hitMiss[i] = (_atkRolls[i] - _atkMod == 1 ? 0 : _atkRolls[i] - _atkMod == 20 ? 3 : _atkRolls[i] < _ac ? 1 : _atkRolls[i] >= _ac ? 2 : -1);
+
+        for (int k = 0; k < _dieAmounts.size(); k++)
+        {
+            // roll i dice j times
+            for (int j = 0; j < _dieAmounts[k]; j++)
+            {
+                // input roll
+                _dmg[i] += std::max(0, static_cast<int>(random(1, DIE_TYPES[k] + 1)));
+                Serial.printf("roll: %d\n", _dmg[i]);
+                //if we crit, roll same dice again
+                if (_hitMiss[i] == 3)
+                {
+                    _dmg[i] += std::max(0, static_cast<int>(random(1, DIE_TYPES[k] + 1)));
+                    Serial.printf("crit roll: %d\n", _dmg[i]);
+                }
+            }
+        }
+        // finally add the damage modifier once
+        _dmg[i] += _dmgMod;
+    }
+}
+void AttackModeGUI::resetRolls()
+{
+    std::fill_n(_atkRolls.begin(), MAX_ROLL, 0);
+    std::fill_n(_hitMiss.begin(), MAX_ROLL, 0);
+    std::fill_n(_dmg.begin(), MAX_ROLL, 0);
+}
+
+void AttackModeGUI::pushRolls()
+{
+     // TOOD (maybe): make this dynamic, magic numbers are typically no go but I may make an exception, we shall see
+    if (_atkAmount <= 3)
+    {
+        _amountOfPages = 1;
+        centeredResults(0, LCDServices::Sprites::BIGDICE, Images::passFailBigDice);
+    }
+    else if (_atkAmount <= 18)
+    {
+        _amountOfPages = 1;
+        centeredResults(0, LCDServices::Sprites::MEDDICE, Images::passFailMedDice);
+    }
+    else
+    {
+        _amountOfPages = getPageAmount(
+            constants::RESULT_PLACEMENT_WIDTH,
+            constants::RESULT_PLACEMENT_HEIGHT, LCDServices::Sprites::LILDICE,
+            0,
+            0);
+        centeredResults(_currentResultPage, LCDServices::Sprites::LILDICE, Images::passFailLilDice);
+    }
+    drawResults();
+}
+// TOOOOOOD MAKE THIS DYNAMIC HOLY DONT HAVE TIME NOW LOOOOL
+void AttackModeGUI::drawResults()
+{
+    _tft.fillRect(0, 211, 330, 29, TFT_BLACK);
+    char buffer[30];
+    _tft.setTextFont(1);
+    _tft.setTextSize(2);
+    _tft.setTextColor(TFT_WHITE);
+    if (_amountOfPages > 1)
+    {
+        _tft.setTextDatum(BL_DATUM);
+        _tft.setCursor(0, constants::SCREEN_HEIGHT);
+        snprintf(buffer, 30, "%d/%u", _currentResultPage + 1, _amountOfPages);
+        _tft.drawString(buffer, 0, constants::SCREEN_HEIGHT - 3);
+    }
+    _tft.setTextDatum(BR_DATUM);
+
+    // TESTING
+    // if (_ac > 0)
+    // {
+        int amntPassed = 0;
+        int totalDmg = 0;
+        for (int i = 0; i < _atkAmount; i++)
+        {
+            // 2 and 3 = passed
+            if(_hitMiss[i] >= 2)
+            {
+                amntPassed++;
+                totalDmg += _dmg[i];
+            }
+        }
+        snprintf(buffer, 30, "Dmg: %d  Hits: %d/%d", totalDmg, amntPassed, _atkAmount);
+        _tft.drawString(buffer, constants::SCREEN_WIDTH, constants::SCREEN_HEIGHT - 3);
+    // }
+}
+void AttackModeGUI::centeredResults(int page, LCDServices::Sprites spriteEnum, const Images::Image *images)
+{
+    // make the box that the results will go into
+    GFXStructs::Rect resultBox = {0, 0, constants::RESULT_PLACEMENT_WIDTH, constants::RESULT_PLACEMENT_HEIGHT};
+    // set up grid data
+    GFXStructs::GridPlacementData placementData = _lcdServices.calculateGridDataCentered(resultBox, _lcdServices.getSpriteWidth(spriteEnum), _lcdServices.getSpriteHeight(spriteEnum), _atkAmount, page);
+    // place dice
+    _lcdServices.populateResultBoxCenteredColorText(page, _atkRolls.data(), _dmg.data(), _hitMiss.data(), resultBox, placementData, spriteEnum, images);
+}
+int AttackModeGUI::getPageAmount(int resultBoxWidth, int resultBoxHeight, LCDServices::Sprites spriteEnum, int colGapSize, int rowGapSize)
+{
+    // formula ripped straight from populateResultBox, dividing the total number of dice
+    int temp = ((resultBoxWidth + colGapSize) / (_lcdServices.getSpriteWidth(spriteEnum) + colGapSize)) * ((resultBoxHeight + rowGapSize) / (_lcdServices.getSpriteHeight(spriteEnum) + rowGapSize));
+    // ngl I was NOT smart enough to come up with this formula so do not credit me. always rounds up
+    return (_atkAmount + temp - 1) / temp;
+}
+
 void AttackModeGUI::drawStaticItems()
 { 
-    int ellipse_1_color = 0x2124;
-    _tft.fillScreen(0x0);
-    // paint 204
-    // _tft.pushImage(8, 8, 302, 225, image_paint_204_pixels);
     // ellipse 91
     _tft.fillEllipse(43, 72, 13, 22, 0xFFFF);
     // ellipse 91
@@ -224,17 +330,6 @@ void AttackModeGUI::drawStaticItems()
     _tft.setTextSize(2);
     _tft.setTextDatum(TL_DATUM);
     _tft.drawString("Attack Mode", 9, 7);
-    // croppedfinald12
-    // _tft.pushImage(69, 68, 50, 52, image_croppedfinald12_pixels);
-    // // croppedfinald10
-    // _tft.pushImage(134, 72, 50, 43, image_croppedfinald10_pixels);
-    // // croppedfinald8
-    // _tft.pushImage(200, 66, 50, 57, image_croppedfinald8_pixels);
-    // // croppedfinald6
-    // _tft.pushImage(102, 127, 50, 50, image_croppedfinald6_pixels);
-    // croppedfinald4
-    // _tft.pushImage(168, 130, 50, 44, image_croppedfinald4_pixels);
-    // rect 90
     _tft.fillRect(274, 78, 46, 45, 0xFFFF);
     // rect 90
     _tft.fillRect(274, 135, 46, 45, 0xFFFF);
@@ -272,52 +367,10 @@ void AttackModeGUI::drawStaticItems()
     _tft.drawString("s3", 173, 219);
     // string 92
     _tft.drawString("s4", 212, 219);
-
-    // line 106
-    // _tft.drawLine(271, 126, 319, 126, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(271, 183, 319, 183, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(0, 99, 51, 99, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(0, 155, 52, 155, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(0, 212, 53, 212, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(93, 209, 111, 209, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(132, 209, 150, 209, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(169, 209, 187, 209, 0xFFFF);
-    // // line 106
-    // _tft.drawLine(208, 209, 226, 209, 0xFFFF);
-    // string 93
-    // string 92
-    // _tft.drawString("-99", 276, 99);
-    // // string 93
-    // _tft.drawString("-99", 276, 157);
-    // // string 92
-    // _tft.drawString("+", 100, 230);
-    // // string 92
-    // _tft.drawString("-", 139, 230);
-    // // string 92
-    // _tft.drawString("-", 176, 230);
-    // // string 92
-    // _tft.drawString("+", 215, 230);
-    // _tft.setTextSize(2);
-    // _tft.drawString("-99", 9, 71);
-    // // string 93
-    // _tft.drawString("-99", 9, 128);
-    // // string 93
-    // _tft.drawString("Flat", 5, 179);
-
-
-
-
-    // ellipse 1
-    _tft.drawEllipse(309, 7, 55, 55, ellipse_1_color);
-    // ellipse 1
-    _tft.drawEllipse(325, -6, 45, 45, 0x2104);
+    // // ellipse 1
+    // _tft.drawEllipse(309, 7, 55, 55, ellipse_1_color);
+    // // ellipse 1
+    // _tft.drawEllipse(325, -6, 45, 45, 0x2104);
     // [END lopaka generated]
 
 }
@@ -329,7 +382,6 @@ void AttackModeGUI::drawNonStaticItems()
     }
     drawNav(TFT_WHITE);
 }
-
 void AttackModeGUI::drawNav(uint32_t color)
 {
     _tft.drawLine(
